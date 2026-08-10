@@ -41,6 +41,10 @@ serve-blocked port="3001":
 icons:
     python3 store-assets/build_icons.py
 
+# Redraw the Chrome Web Store listing images and the promo tile
+screenshots:
+    python3 store-assets/build_screenshots.py
+
 # Build the zip for Chrome Web Store submission
 package: build
     rm -f parallax.zip

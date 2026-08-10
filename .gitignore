@@ -1,6 +1,13 @@
 node_modules/
 dist/
+parallax.zip
 *.tgz
 *.zip
+
+# Design scratch notes, per the shared conventions
 .tmp/
+
+# Per-machine permission grants Claude Code writes; the shared settings.json is committed
+.claude/settings.local.json
+
 .DS_Store
