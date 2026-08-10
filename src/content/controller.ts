@@ -458,7 +458,7 @@ export async function startSplit(
     for (const pane of ["source", "target"] as const) {
       const view = (pane === "source" ? source : target).defaultView;
       if (view !== null) {
-        watchInPageNavigation(view, () => follower?.check(pane), pageAbort.signal);
+        watchInPageNavigation(view, () => follower?.check(), pageAbort.signal);
       }
     }
 

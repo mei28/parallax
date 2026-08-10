@@ -1,13 +1,16 @@
 // Following a link with both panes.
 //
-// A link clicked in one pane navigates only that pane, which would leave the two showing
-// different pages. The other is sent after it, and the load that causes has to be told apart
-// from the reader navigating again — the same echo problem the scroll sync has, in URLs.
+// A link clicked in one pane navigates only that pane. The other has to be sent after it,
+// and the page then done over — paired afresh, translated afresh.
 //
-// The frames are behind an interface rather than used directly, because what matters here is
-// where a pane is and where it is being sent, and neither is observable in a test through an
-// HTMLIFrameElement.
-
+// This asks where the panes are rather than tracking how they got there. An earlier version
+// chained events — the leader's load, then the follower's load, then report — and one link in
+// that chain not firing stopped everything with nothing to show for it. Here every load, and
+// every in-page route change, asks the same question: are both panes on one page, and is it a
+// page not yet prepared? Nothing depends on which event arrives, or on how many do.
+//
+// The frames are behind an interface rather than used directly, because where a pane is and
+// where it is being sent are not observable in a test through an HTMLIFrameElement.
 import type { PaneId } from "../shared/types.ts";
 import { isSameDocument } from "../shared/url.ts";
 
@@ -20,7 +23,6 @@ export interface PaneFrame {
 
 export interface NavigationOptions {
   frames: Readonly<Record<PaneId, PaneFrame>>;
-  /** Leaving this ends what the split can do: another origin is another document to us. */
   origin: string;
   startedAt: string;
   /** Both panes are now on this page, and it needs pairing and translating afresh. */
@@ -31,6 +33,17 @@ export interface NavigationOptions {
    */
   onLeftOrigin: (url: string) => void;
   signal: AbortSignal;
+}
+
+export interface NavigationFollower {
+  /**
+   * Look at where both panes are.
+   *
+   * Called for each frame's load event, and again from inside each pane for routes that
+   * never reload it — a single-page app navigating with pushState leaves the frame element
+   * silent, so watching only its load event misses every link on sites like GitHub.
+   */
+  check(): void;
 }
 
 /** Wrap a real iframe for the follower to drive. */
@@ -53,65 +66,75 @@ export function paneFrame(frame: HTMLIFrameElement): PaneFrame {
   };
 }
 
-export interface NavigationFollower {
-  /**
-   * Look at where a pane is now.
-   *
-   * Called for the frame's own load event, and again from inside each pane for navigations
-   * that never reload it — a single-page app routing with pushState leaves the frame element
-   * silent, so watching only its load event misses every link on sites like GitHub.
-   */
-  check(pane: PaneId): void;
-}
-
 export function createNavigationFollower(options: NavigationOptions): NavigationFollower {
   const { frames, signal } = options;
-  const other = (pane: PaneId): PaneId => (pane === "source" ? "target" : "source");
 
-  let current = options.startedAt;
-  let following = false;
+  /** The page both panes were last prepared for. */
+  let prepared = options.startedAt;
+  /** Where a pane has been sent but has not arrived yet, so it is not sent twice. */
+  let pending: string | null = null;
 
-  const onLoad = (pane: PaneId): void => {
-    if (following) {
-      // The other pane catching up with a page we already know about.
-      return;
+  /**
+   * When a pane has been sent somewhere, look again shortly after in case nothing told us it
+   * arrived.
+   *
+   * Its load event should say so, and normally does. But a navigation is in flight and we
+   * know it: verifying that it landed is cheaper than trusting one event to fire, and this
+   * feature has already been shipped twice on that trust and silently done nothing. The
+   * checks stop as soon as the panes agree, and stop regardless after a few seconds.
+   */
+  const ARRIVAL_CHECKS_MS = [150, 500, 1500, 4000] as const;
+  const confirmArrival = (): void => {
+    for (const delay of ARRIVAL_CHECKS_MS) {
+      const timer = setTimeout(() => {
+        if (pending !== null) {
+          check();
+        }
+      }, delay);
+      signal.addEventListener("abort", () => clearTimeout(timer), { once: true });
     }
-    const arrived = frames[pane].currentUrl();
-    if (arrived === null) {
-      // Unreadable means another origin: the pane went somewhere the split cannot go.
+  };
+
+  const check = (): void => {
+    const source = frames.source.currentUrl();
+    const target = frames.target.currentUrl();
+    if (source === null || target === null) {
       options.onLeftOrigin("");
       return;
     }
-    // Compared without the fragment, which loads nothing new, and so is not a navigation
-    // either pane needs to hear about.
-    if (isSameDocument(current, arrived)) {
-      return;
+    for (const url of [source, target]) {
+      if (new URL(url).origin !== options.origin) {
+        options.onLeftOrigin(url);
+        return;
+      }
     }
-    if (new URL(arrived).origin !== options.origin) {
-      options.onLeftOrigin(arrived);
+
+    if (isSameDocument(source, target)) {
+      pending = null;
+      if (!isSameDocument(source, prepared)) {
+        prepared = source;
+        options.onNavigated(source);
+      }
       return;
     }
 
-    current = arrived;
-    following = true;
-    const follower = other(pane);
-    let settled = false;
-    frames[follower].onLoad(() => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      following = false;
-      options.onNavigated(arrived);
-    }, signal);
-    frames[follower].navigate(arrived);
+    // They disagree, so one has moved. Whichever is no longer where the split was is the one
+    // the reader followed a link in.
+    const leader: PaneId = isSameDocument(source, prepared) ? "target" : "source";
+    const destination = leader === "source" ? source : target;
+    if (pending !== null && isSameDocument(pending, destination)) {
+      return;
+    }
+    pending = destination;
+    frames[leader === "source" ? "target" : "source"].navigate(destination);
+    confirmArrival();
   };
 
   for (const pane of ["source", "target"] as const) {
-    frames[pane].onLoad(() => onLoad(pane), signal);
+    frames[pane].onLoad(check, signal);
   }
 
-  return { check: onLoad };
+  return { check };
 }
 
 /**

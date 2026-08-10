@@ -13,7 +13,11 @@ const HOME = "https://example.test/article";
 /** A frame that records where it was sent and fires load when told to. */
 function fakeFrame(url = HOME) {
   const handlers: (() => void)[] = [];
-  const frame: PaneFrame & { visited: string[]; arrive(at?: string): void } = {
+  const frame: PaneFrame & {
+    visited: string[];
+    arrive(at?: string): void;
+    silentNavigate(to: string): void;
+  } = {
     visited: [],
     currentUrl: () => url,
     navigate: (to: string) => {
@@ -21,6 +25,10 @@ function fakeFrame(url = HOME) {
       url = to;
     },
     onLoad: (handler) => handlers.push(handler),
+    /** Move without announcing it, the way a load event that never fires would leave things. */
+    silentNavigate: (to: string) => {
+      url = to;
+    },
     // The browser finishing a navigation.
     arrive: (at?: string) => {
       if (at !== undefined) {
@@ -137,6 +145,26 @@ describe("createNavigationFollower", () => {
     expect(target.visited).toEqual([]);
     expect(onLeftOrigin).toHaveBeenCalledWith("https://elsewhere.test/page");
     expect(onNavigated).not.toHaveBeenCalled();
+  });
+
+  // The load event should say the pane arrived, and normally does. This feature has already
+  // been shipped twice trusting that and silently doing nothing, so arrival is verified.
+  it("notices the other pane arrived even if nothing announced it", async () => {
+    vi.useFakeTimers();
+    try {
+      start();
+      // The leader moves and reports; the follower is sent but its load never fires.
+      source.silentNavigate("https://example.test/next");
+      source.arrive();
+      expect(onNavigated).not.toHaveBeenCalled();
+
+      target.silentNavigate("https://example.test/next");
+      await vi.advanceTimersByTimeAsync(200);
+
+      expect(onNavigated).toHaveBeenCalledWith("https://example.test/next");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("treats an unreadable pane as having left the origin", async () => {
