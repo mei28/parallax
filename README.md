@@ -7,6 +7,8 @@ sentence as you scroll. Translation runs on your own machine through Chrome's bu
 Translator API: no API key, no account, nothing sent anywhere, and it works offline once the
 language pack is downloaded.
 
+![Two panes of one page, English on the left and Japanese on the right](store-assets/screenshots/parallax-1-hero.png)
+
 ## What it does
 
 - **Splits left/right or top/bottom**, at whatever ratio you drag the divider to. Drag a pane
@@ -17,11 +19,18 @@ language pack is downloaded.
   original height, so scrolling the two in proportion drifts. The panes are matched block by
   block instead, by what they say, and the follower is scrolled to bring the matching block
   to the same place on screen.
+
+  ![The same heading level in both panes, marked by a rule drawn across them](store-assets/screenshots/parallax-2-aligned.png)
+
 - **Translates what is on screen first.** The on-device translator runs one call at a time, at
   roughly 29 ms each. Working front to back would leave a long article untranslated for
   twenty seconds; ordering by what is in view makes the wait the length of one screen.
 - **Reads sites that refuse to be embedded**, if you allow it, one site at a time. See
   [PRIVACY.md](PRIVACY.md#sites-that-refuse-to-be-embedded) for exactly what that changes.
+
+| Any ratio | Or stacked |
+|---|---|
+| ![An asymmetric split with the drag handle between the panes](store-assets/screenshots/parallax-3-adjustable.png) | ![The same page split top and bottom instead](store-assets/screenshots/parallax-4-vertical.png) |
 
 ## Requirements
 

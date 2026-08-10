@@ -2,6 +2,35 @@
 
 Everything the submission form asks for, ready to paste. Not shipped in the package.
 
+## Submitting
+
+Once, before the first submission: register at the
+[Developer Dashboard](https://chrome.google.com/webstore/devconsole) with a Google account
+and pay the one-off 5 USD registration fee, then verify the contact email — an unverified
+one blocks publishing rather than uploading, which is an easy way to be surprised late.
+
+Then, for each release:
+
+1. **Decide the version.** `static/manifest.json` is the one the store reads; keep
+   `package.json` in step with it. The store refuses an upload whose version is not higher
+   than the last published one, so this is not a step to leave until after the upload.
+2. `just check && just package` — the gate, then `parallax.zip`.
+3. **New Item**, upload the zip. The extension ID is assigned here and never changes; the
+   store listing URL is built from it.
+4. **Store listing**: name, both descriptions, category and language from below; the five
+   screenshots and the promo tile from `store-assets/screenshots/`. The icon comes from the
+   package, so there is nothing to upload for it.
+5. **Privacy**: the single purpose and the four permission justifications from below, the
+   privacy policy URL, and the data-usage declarations — none of the categories apply, and
+   all three certifications can be affirmed.
+6. **Distribution**: public, all regions, no payment.
+7. **Submit for review.** A first submission that asks for broad host access takes longer
+   than the usual day or so, and may come back with questions; the justifications below are
+   written to be answerable by quoting them.
+
+After approval, an update is the same loop from step 1. Review is quicker for updates that
+do not change the permissions.
+
 ---
 
 ## Item details
