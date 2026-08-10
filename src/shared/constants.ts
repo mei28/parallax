@@ -8,6 +8,7 @@ export const ATTR_CONTAINER = "data-parallax-container";
 export const ATTR_PANE = "data-parallax-pane";
 export const ATTR_FRAME = "data-parallax-frame";
 export const ATTR_HANDLE = "data-parallax-handle";
+export const ATTR_GRIP = "data-parallax-grip";
 export const ATTR_ORIENTATION = "data-parallax-orientation";
 export const ATTR_MODE = "data-parallax-mode";
 export const ATTR_DRAGGING = "data-parallax-dragging";

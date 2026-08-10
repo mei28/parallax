@@ -87,24 +87,128 @@
 
 /* ---- handle ------------------------------------------------------------ */
 
+/* A hairline divider with a grip in the middle, rather than a slab of grey. The line says
+   where the boundary is; the grip says the boundary can be moved. */
 [data-parallax-handle] {
-  background: color-mix(in srgb, CanvasText 22%, Canvas);
-  border: 0;
+  position: relative;
+  /* The grip is wider than its 8px track and the hit area wider still, so both overhang the
+     neighbouring panes. Without this the target pane, painted later, would cover them. */
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
+  border: 0;
+  background: transparent;
   touch-action: none;
+}
+
+/* The visible boundary: one device-independent pixel. */
+[data-parallax-handle]::before {
+  content: "";
+  position: absolute;
+  background: color-mix(in srgb, CanvasText 22%, Canvas);
+  transition: background-color 120ms ease;
+}
+
+/* An invisible strip wider than the track. Grabbing an 8px target between two documents is
+   fiddly, and a pseudo-element extends the button's own hit area without moving the layout. */
+[data-parallax-handle]::after {
+  content: "";
+  position: absolute;
 }
 
 [data-parallax-orientation="horizontal"] [data-parallax-handle] {
   cursor: col-resize;
 }
 
+[data-parallax-orientation="horizontal"] [data-parallax-handle]::before {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+[data-parallax-orientation="horizontal"] [data-parallax-handle]::after {
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  right: -4px;
+}
+
 [data-parallax-orientation="vertical"] [data-parallax-handle] {
   cursor: row-resize;
 }
 
+[data-parallax-orientation="vertical"] [data-parallax-handle]::before {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+[data-parallax-orientation="vertical"] [data-parallax-handle]::after {
+  left: 0;
+  right: 0;
+  top: -4px;
+  bottom: -4px;
+}
+
+/* Two columns of three dots, drawn as gradients so no markup is needed. */
+[data-parallax-grip] {
+  position: relative;
+  z-index: 1;
+  width: 12px;
+  height: 22px;
+  border: 1px solid color-mix(in srgb, CanvasText 24%, Canvas);
+  border-radius: 3px;
+  background-color: color-mix(in srgb, CanvasText 7%, Canvas);
+  color: color-mix(in srgb, CanvasText 55%, Canvas);
+  background-image:
+    radial-gradient(circle 1px at 3.5px 6px, currentColor 99%, transparent 100%),
+    radial-gradient(circle 1px at 3.5px 11px, currentColor 99%, transparent 100%),
+    radial-gradient(circle 1px at 3.5px 16px, currentColor 99%, transparent 100%),
+    radial-gradient(circle 1px at 8.5px 6px, currentColor 99%, transparent 100%),
+    radial-gradient(circle 1px at 8.5px 11px, currentColor 99%, transparent 100%),
+    radial-gradient(circle 1px at 8.5px 16px, currentColor 99%, transparent 100%);
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+[data-parallax-orientation="vertical"] [data-parallax-grip] {
+  transform: rotate(90deg);
+}
+
+[data-parallax-handle]:hover::before,
+[data-parallax-handle]:focus-visible::before,
+[data-parallax-container][data-parallax-dragging] [data-parallax-handle]::before {
+  background: Highlight;
+}
+
+[data-parallax-handle]:hover [data-parallax-grip],
+[data-parallax-handle]:focus-visible [data-parallax-grip],
+[data-parallax-container][data-parallax-dragging] [data-parallax-grip] {
+  border-color: Highlight;
+  color: CanvasText;
+  background-color: color-mix(in srgb, Highlight 16%, Canvas);
+}
+
 [data-parallax-handle]:focus-visible {
+  outline: none;
+}
+
+[data-parallax-handle]:focus-visible [data-parallax-grip] {
   outline: 2px solid Highlight;
-  outline-offset: -2px;
+  outline-offset: 2px;
+}
+
+/* Nothing to grab once a pane has been dragged away. */
+[data-parallax-container][data-parallax-mode="single-target"] [data-parallax-handle] {
+  display: none;
 }
 
 /* While dragging, the iframes must not hit-test the pointer: each pane is a separate

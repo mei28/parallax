@@ -19,6 +19,7 @@ import {
   ATTR_CONTAINER,
   ATTR_DIALOG,
   ATTR_FRAME,
+  ATTR_GRIP,
   ATTR_HANDLE,
   ATTR_HOST,
   ATTR_MESSAGE,
@@ -125,7 +126,11 @@ export function createOverlay(doc: Document, options: OverlayOptions): Overlay {
     type: "button",
     role: "separator",
     "aria-label": "Resize the split",
+    title: "Drag to resize, or use the arrow keys",
   });
+  // The grip is drawn entirely in CSS. Sites that enable Trusted Types — GitHub among them —
+  // make innerHTML throw, so an inline SVG string is not an option here.
+  handle.append(element(doc, "span", { [ATTR_GRIP]: "", "aria-hidden": "true" }));
 
   const toolbar = element(doc, "div", { [ATTR_TOOLBAR]: "", [ATTR_STATUS]: "idle" });
   const message = element(doc, "span", { [ATTR_MESSAGE]: "", role: "status" });

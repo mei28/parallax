@@ -4,6 +4,7 @@
 // never re-run it. The marker below makes a repeated injection a no-op rather than a second
 // overlay stacked on the first.
 import { renderMessage } from "../chrome/i18n.ts";
+import { savePreferences } from "../chrome/storage.ts";
 import { describeFailure, ParallaxError } from "../shared/errors.ts";
 import type { Message, StateResponse } from "../shared/messages.ts";
 import type { Controller } from "./controller.ts";
@@ -20,6 +21,10 @@ if (window.__parallaxInstalled !== true) {
 
   let controller: Controller | null = null;
 
+  // The controller can close itself — Esc, or the reader dragging the translated pane away —
+  // so holding a reference is not the same as there being a split. Ask it.
+  const isActive = (): boolean => controller?.isActive() ?? false;
+
   const stop = (): void => {
     controller?.destroy();
     controller = null;
@@ -27,14 +32,18 @@ if (window.__parallaxInstalled !== true) {
 
   const start = async (message: Extract<Message, { type: "START_SPLIT" }>): Promise<void> => {
     stop();
-    controller = await startSplit(document, message.preferences);
+    controller = await startSplit(document, message.preferences, {
+      onPreferencesChanged(patch) {
+        void savePreferences(patch);
+      },
+    });
   };
 
   chrome.runtime.onMessage.addListener(
     (message: Message, _sender, respond: (response: StateResponse) => void) => {
       switch (message.type) {
         case "GET_STATE":
-          respond({ active: controller !== null });
+          respond({ active: isActive() });
           return false;
 
         case "STOP_SPLIT":
@@ -44,7 +53,7 @@ if (window.__parallaxInstalled !== true) {
 
         case "START_SPLIT":
         case "TOGGLE_SPLIT": {
-          if (message.type === "TOGGLE_SPLIT" && controller !== null) {
+          if (message.type === "TOGGLE_SPLIT" && isActive()) {
             stop();
             respond({ active: false });
             return false;
@@ -66,7 +75,8 @@ if (window.__parallaxInstalled !== true) {
         }
 
         case "TOGGLE_ORIENTATION":
-          respond({ active: controller !== null });
+          controller?.toggleOrientation();
+          respond({ active: isActive() });
           return false;
       }
     },

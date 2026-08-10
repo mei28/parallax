@@ -6,10 +6,11 @@
 // blank rectangles.
 import { renderMessage } from "../chrome/i18n.ts";
 import { describeFailure, ParallaxError } from "../shared/errors.ts";
-import type { LanguagePair, Preferences } from "../shared/types.ts";
+import type { LanguagePair, PaneId, Preferences } from "../shared/types.ts";
 import { openPane } from "./frames.ts";
 import type { Overlay } from "./overlay.ts";
 import { createOverlay } from "./overlay.ts";
+import { createResizer } from "./resizer.ts";
 import { collectTextNodes } from "./text-nodes.ts";
 import type { Queue, TranslateTarget } from "./translate-queue.ts";
 import { createQueue } from "./translate-queue.ts";
@@ -28,7 +29,22 @@ const BLOCK_SELECTOR =
   "p, h1, h2, h3, h4, h5, h6, li, dt, dd, td, th, blockquote, figure, figcaption, section, article, div";
 
 export interface Controller {
+  /**
+   * Whether a split is still running.
+   *
+   * Distinct from whether anything is on screen. Dragging the original away ends the split
+   * but leaves the translation up to read, so this goes false while the overlay stays. The
+   * controller can also close itself entirely, via Esc or by the translated pane being
+   * dragged away, so holding a reference proves nothing — ask.
+   */
+  isActive(): boolean;
+  toggleOrientation(): void;
   destroy(): void;
+}
+
+export interface ControllerHooks {
+  /** Persist a ratio or orientation the reader settled on. */
+  onPreferencesChanged(patch: Partial<Preferences>): void;
 }
 
 function groupByBlock(doc: Document, nodes: readonly Text[]) {
@@ -84,7 +100,11 @@ function observeViewport(
   signal.addEventListener("abort", () => observer.disconnect(), { once: true });
 }
 
-export async function startSplit(doc: Document, preferences: Preferences): Promise<Controller> {
+export async function startSplit(
+  doc: Document,
+  preferences: Preferences,
+  hooks: ControllerHooks,
+): Promise<Controller> {
   const pair: LanguagePair = {
     source: preferences.sourceLanguage,
     target: preferences.targetLanguage,
@@ -100,15 +120,78 @@ export async function startSplit(doc: Document, preferences: Preferences): Promi
 
   let queue: Queue | null = null;
   let translator: TranslatorSession | null = null;
+  let orientation = preferences.orientation;
+  // Two separate questions. `splitting` is whether the reader is still comparing two panes;
+  // `open` is whether anything of ours is on screen at all. Collapsing the original ends the
+  // first without ending the second, and conflating them would leave Esc doing nothing.
+  let splitting = true;
+  let open = true;
 
   const controller: Controller = {
+    isActive: () => open && splitting,
+
+    toggleOrientation() {
+      orientation = orientation === "horizontal" ? "vertical" : "horizontal";
+      // The ratio is deliberately left alone, so flipping the split keeps the reader's
+      // chosen proportions rather than resetting them.
+      overlay.setOrientation(orientation);
+      hooks.onPreferencesChanged({ orientation });
+    },
+
     destroy() {
+      if (!open) {
+        return;
+      }
+      open = false;
+      splitting = false;
       abort.abort();
       queue?.destroy();
       translator?.destroy();
       overlay.destroy();
     },
   };
+
+  overlay.onRequestClose(() => controller.destroy());
+
+  createResizer({
+    container: overlay.container,
+    handle: overlay.handle,
+    orientation: () => orientation,
+    initialRatio: preferences.ratio,
+    onPreview: (ratio) => overlay.setRatio(ratio),
+    onCollapsePreview: (pane) => overlay.setCollapsing(pane),
+    onCommit(outcome) {
+      if (outcome.kind === "split") {
+        overlay.setRatio(outcome.ratio);
+        hooks.onPreferencesChanged({ ratio: outcome.ratio });
+        return;
+      }
+      collapse(outcome.collapsed);
+    },
+    signal: abort.signal,
+  });
+
+  /**
+   * Dragging a pane away ends the split either way. What is left behind differs.
+   *
+   * Dragging away the translation puts the reader back on the original page, which is right
+   * underneath, untouched and at the offset they left it.
+   *
+   * Dragging away the original leaves the translation up, full width, and stops being a
+   * split. That reading is the point of the gesture — "I am done comparing, let me read
+   * this" — and it also avoids throwing away translate() calls that are already paid for and
+   * exist nowhere but in that frame. Translation in flight keeps running. Esc still closes
+   * it, and asking for a split again rebuilds from scratch.
+   */
+  function collapse(pane: PaneId): void {
+    if (pane === "target") {
+      controller.destroy();
+      return;
+    }
+    splitting = false;
+    overlay.setMode("single-target");
+    overlay.setStatus("ready", "Reading the translation. Press Esc to close.");
+  }
 
   overlay.setStatus("idle", "Loading both panes…");
 
