@@ -31,10 +31,21 @@
   （service worker は worker コンテキストなので Translator を持たない）
 - `src/background/` — service worker。storage と `scripting.executeScript` の橋渡しのみ
 - `src/popup/` — popup UI
-- `src/shared/` — pure function のみ（型、定数、分割の幾何計算、スクロール射影、エラー文言）
+- `src/shared/` — pure function のみ（型、定数、分割の幾何計算、スクロール射影、失敗の記述）
+- `src/chrome/` — `chrome.*` API の薄いアダプタ。`src/shared/` が純粋でいられるのはここがあるため
 - `static/` — manifest.json, HTML, CSS, icons（ビルド時に dist/ へコピー）
 - `test/` — vitest。`src/` をミラーする。jsdom はファイル先頭の
   `// @vitest-environment jsdom` で個別に有効化する
+
+### ユーザに見える文字列
+
+`chrome.i18n` で英語と日本語に対応する。カタログは `static/_locales/{en,ja}/messages.json`。
+`src/shared/` は純粋なので `chrome.i18n` を呼べない。代わりに `MessageDescriptor`
+（カタログのキーと置換値）を返し、`src/chrome/i18n.ts` の `renderMessage()` が文字列にする。
+
+`test/shared/errors.test.ts` が、全エラーコードが全ロケールに存在し、置換値の個数が
+カタログの placeholder 数と一致することを検証する。訳の抜けは空のバナーとして出るので、
+テストで潰しておく。
 
 ### 崩してはいけない不変条件
 

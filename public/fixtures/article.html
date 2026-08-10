@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Wreck of the Deutschland — fixture</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        margin: 0 auto;
+        max-width: 42rem;
+        padding: 2rem 1.25rem 6rem;
+        font: 16px/1.7 Georgia, "Times New Roman", serif;
+      }
+      h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 .25rem; }
+      h2 { font-size: 1.3rem; margin: 2.5rem 0 .75rem; }
+      .byline { font-style: italic; opacity: .7; margin: 0 0 2rem; }
+      code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .875em; }
+      pre { padding: .75rem 1rem; overflow-x: auto; background: rgb(128 128 128 / 12%); }
+      table { border-collapse: collapse; width: 100%; margin: 1.5rem 0; }
+      th, td { border: 1px solid rgb(128 128 128 / 40%); padding: .4rem .6rem; text-align: left; }
+      blockquote { margin: 1.5rem 0; padding-left: 1rem; border-left: 3px solid currentColor; opacity: .85; }
+      figcaption { font-size: .875rem; opacity: .7; }
+      .icon { font-style: normal; }
+    </style>
+  </head>
+  <body>
+    <h1>Notes on reading two texts at once</h1>
+    <p class="byline">A fixture page. Every construct here exists to exercise one rule.</p>
+
+    <p>
+      Reading a translation beside its original is an old habit. Scribes ruled two columns on a
+      single sheet so the eye could cross between them without losing its place, and the practice
+      survives in facing-page editions of poetry. What changes on the web is that the two texts no
+      longer agree on how much room they need.
+    </p>
+
+    <p>
+      A paragraph that runs four lines in English may run three in Japanese, or six. Any attempt to
+      keep the two columns aligned by scrolling them in proportion drifts a little further apart
+      with every screen. Alignment has to be anchored to the content itself.
+    </p>
+
+    <h2>What the panes must agree on</h2>
+
+    <ul>
+      <li>The order of the blocks, so an anchor in one pane names a block in the other.</li>
+      <li>The identity of each block, which survives translation only if nothing is reparented.</li>
+      <li>Nothing else. Heights, line counts and wrapping are all free to differ.</li>
+    </ul>
+
+    <blockquote>
+      The eye does not read a page. It reads a line, and remembers roughly where the line sat.
+    </blockquote>
+
+    <h2>Constructs that must be left alone</h2>
+
+    <p>
+      An inline reference to <code>Array.prototype.flatMap</code> is not prose, and neither is a
+      block of source:
+    </p>
+
+    <pre>function followerScrollTop(leaderTop, leaderAnchor, followerAnchor) {
+  return followerAnchor + (leaderTop - leaderAnchor);
+}</pre>
+
+    <p translate="no">
+      This paragraph carries translate="no" and must survive untouched, in every language.
+    </p>
+
+    <p class="notranslate">
+      This one uses the notranslate class, which Google Translate has honoured for years.
+    </p>
+
+    <p>
+      An icon ligature such as <i class="icon" aria-hidden="true">menu_open</i> is decorative, and
+      translating it would replace a glyph with a word.
+    </p>
+
+    <p>
+      Numbers and symbols carry no letters at all: 1,234.56 — 98% — © 2026 — →. None of them should
+      cost a translation call.
+    </p>
+
+    <h2>A table, because tables break naive layouts</h2>
+
+    <table>
+      <thead>
+        <tr><th>Approach</th><th>Scroll sync</th><th>Split ratio</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Two OS windows</td><td>Not possible</td><td>Fixed at half</td></tr>
+        <tr><td>Cross-origin iframe</td><td>Needs messaging</td><td>Adjustable</td></tr>
+        <tr><td>Same-origin iframes</td><td>Direct DOM access</td><td>Adjustable</td></tr>
+      </tbody>
+    </table>
+
+    <figure>
+      <figcaption>A caption is prose and should be translated.</figcaption>
+    </figure>
+
+    <h2>Enough length to scroll</h2>
+
+    <p>
+      The passage below exists so the page is taller than one screen at any reasonable split ratio.
+      Scroll synchronisation cannot be judged on a page that does not scroll.
+    </p>
+
+    <p>
+      When a reader moves down a column, the thing they are tracking is not a pixel offset but a
+      sentence. Restoring that sentence to the same height in the facing column is the whole of the
+      problem, and it is why the anchor is taken a fifth of the way down the viewport rather than at
+      its very top: a block straddling the top edge is one the reader has already finished.
+    </p>
+
+    <p>
+      Sites that render differently on each load — an advertisement slot, a rotating quotation, a
+      timestamp counted from now — break the assumption that two fetches of one URL produce one
+      structure. Where that happens the panes cannot be paired, and saying so plainly is better than
+      silently falling back to a proportional scroll that will drift.
+    </p>
+
+    <p>
+      The remaining paragraphs say nothing in particular. They are here to be long.
+    </p>
+
+    <p>
+      Consider how much of a page is not prose: navigation, breadcrumbs, cookie notices, share
+      buttons, bylines, timestamps, tag lists, related-article teasers, and the footer's list of
+      corporate links. A translator that walks every text node spends most of its budget on these
+      before it reaches the first sentence of the article, which is the argument for translating
+      what is in view first and letting the rest arrive behind it.
+    </p>
+
+    <p>
+      Consider also how many of those fragments repeat. The word "Home" appears once in the header
+      and once in the footer; a table's column heading repeats down a list of cards. Memoising on
+      the trimmed string collapses them into a single call, and on an ordinary article that removes
+      something between a sixth and a third of the work.
+    </p>
+
+    <p>
+      The last thing worth saying is that none of this needs a network. The model runs on the
+      machine, which means a page in a hotel with no signal translates exactly as fast as one at a
+      desk, and no sentence of what is being read leaves the device.
+    </p>
+  </body>
+</html>

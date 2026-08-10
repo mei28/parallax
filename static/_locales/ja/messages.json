@@ -1,0 +1,72 @@
+{
+  "extDescription": {
+    "message": "同じタブの中で、原文と訳文を並べて読む。",
+    "description": "Extension description shown in the Chrome Web Store and on chrome://extensions"
+  },
+
+  "error_unsupported_page": {
+    "message": "$SCHEME$ のページでは parallax を使えません。Chrome が拡張機能を遮断しています。",
+    "placeholders": { "scheme": { "content": "$1", "example": "chrome:" } }
+  },
+  "error_injection_failed": {
+    "message": "このタブで parallax を開始できませんでした: $REASON$",
+    "placeholders": {
+      "reason": { "content": "$1", "example": "Cannot access contents of the page" }
+    }
+  },
+  "error_window_too_small": {
+    "message": "ウィンドウが狭すぎて分割できません。最低 $REQUIRED$ px 必要です。",
+    "placeholders": { "required": { "content": "$1", "example": "248" } }
+  },
+
+  "error_translator_api_missing": {
+    "message": "Chrome の組み込み Translator API が使えません。parallax にはデスクトップ版 Chrome 138 以降が必要です（Android と iOS では動作しません）。"
+  },
+  "error_translation_unavailable": {
+    "message": "この端末では $SOURCE$ から $TARGET$ への翻訳ができません。",
+    "placeholders": {
+      "source": { "content": "$1", "example": "en" },
+      "target": { "content": "$2", "example": "ja" }
+    }
+  },
+  "error_same_language": {
+    "message": "このページはすでに $LANGUAGE$ です。",
+    "placeholders": { "language": { "content": "$1", "example": "ja" } }
+  },
+  "error_low_confidence": {
+    "message": "このページの言語を判定できませんでした。ポップアップで原文の言語を指定してください。"
+  },
+  "error_activation_required": {
+    "message": "言語パックをダウンロードするには、ここをクリックする必要があります。"
+  },
+  "error_download_failed": {
+    "message": "言語パックをダウンロードできませんでした: $REASON$",
+    "placeholders": { "reason": { "content": "$1", "example": "NetworkError" } }
+  },
+  "error_translate_failed": {
+    "message": "翻訳が $TOTAL$ 件中 $DONE$ 件で停止しました: $REASON$",
+    "placeholders": {
+      "done": { "content": "$1", "example": "128" },
+      "total": { "content": "$2", "example": "402" },
+      "reason": { "content": "$3", "example": "the model was unloaded" }
+    }
+  },
+
+  "error_frame_blocked": {
+    "message": "このサイトは埋め込みを拒否しています（X-Frame-Options: DENY、または Content-Security-Policy の frame-ancestors 'none'）。分割表示できません。"
+  },
+  "error_frame_load_timeout": {
+    "message": "分割表示の中でページが $SECONDS$ 秒以内に読み込み終わりませんでした。",
+    "placeholders": { "seconds": { "content": "$1", "example": "10" } }
+  },
+  "error_frame_busted": {
+    "message": "このサイトは埋め込まれると別ページへ遷移するため、分割表示できません。"
+  },
+
+  "error_dom_mismatch": {
+    "message": "スクロール同期は使えません: 2 つのペインの DOM 構造が一致しませんでした。"
+  },
+  "error_no_anchors": {
+    "message": "スクロール同期は使えません: このページには基準にできるブロック要素がありません。"
+  }
+}

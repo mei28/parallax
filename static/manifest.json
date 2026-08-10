@@ -2,7 +2,8 @@
   "manifest_version": 3,
   "name": "parallax",
   "version": "0.1.0",
-  "description": "Read a page and its translation side by side, in the same tab.",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
   "minimum_chrome_version": "138",
   "permissions": ["storage", "activeTab", "scripting"],
   "action": {
