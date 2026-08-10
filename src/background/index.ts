@@ -3,10 +3,10 @@
 // It owns the keyboard commands and nothing else. The Translator API is not available in
 // worker contexts, and the popup talks to the tab directly, so there is no reason for any
 // other work to pass through here.
-import { armFraming, disarmFraming } from "../chrome/framing.ts";
+import { armFraming, diagnoseFraming, disarmFraming } from "../chrome/framing.ts";
 import { sendToTab } from "../chrome/inject.ts";
 import { loadPreferences } from "../chrome/storage.ts";
-import type { FramingMessage, FramingResponse } from "../shared/messages.ts";
+import type { DiagnoseResponse, FramingMessage, FramingResponse } from "../shared/messages.ts";
 import { isSplittableUrl } from "../shared/url.ts";
 
 chrome.commands.onCommand.addListener((command, tab) => {
@@ -17,7 +17,11 @@ chrome.commands.onCommand.addListener((command, tab) => {
 // script. The tab id comes from the sender, never from the message, so a page cannot reach
 // into another tab.
 chrome.runtime.onMessage.addListener(
-  (message: FramingMessage, sender, respond: (response: FramingResponse) => void) => {
+  (
+    message: FramingMessage,
+    sender,
+    respond: (response: FramingResponse | DiagnoseResponse) => void,
+  ) => {
     const tabId = sender.tab?.id;
     if (tabId === undefined) {
       return false;
@@ -30,6 +34,13 @@ chrome.runtime.onMessage.addListener(
             kind: "failed",
             reason: error instanceof Error ? error.message : String(error),
           }),
+      );
+      return true;
+    }
+    if (message.type === "DIAGNOSE_FRAMING") {
+      diagnoseFraming(message.url).then(
+        (refusal) => respond({ refusal }),
+        () => respond({ refusal: null }),
       );
       return true;
     }

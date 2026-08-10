@@ -71,6 +71,7 @@ function deps(overrides: Partial<ControllerDeps> = {}): ControllerDeps {
     createTranslator: async () => ({ translate: async (t: string) => `[${t}]`, destroy: vi.fn() }),
     openPane: async () => paneDocument(),
     requestFramingOverride: async () => ({ kind: "no-permission" }),
+    diagnoseFraming: async () => null,
     releaseFramingOverride: async () => {},
     createOverlay: () => overlay,
     ...overrides,

@@ -105,6 +105,10 @@ describe("locale catalogues", () => {
         detail: { done: 1, total: 2, reason: "stopped" },
       },
       FRAME_BLOCKED: { code: "FRAME_BLOCKED" },
+      FRAME_BLOCKED_BY: {
+        code: "FRAME_BLOCKED_BY",
+        detail: { header: "X-Frame-Options: DENY" },
+      },
       FRAME_LOAD_TIMEOUT: { code: "FRAME_LOAD_TIMEOUT", detail: { seconds: 10 } },
       FRAME_BUSTED: { code: "FRAME_BUSTED" },
       FRAMING_UNSAFE: { code: "FRAMING_UNSAFE", detail: { reason: "nonce" } },

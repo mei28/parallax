@@ -26,6 +26,7 @@ export type ParallaxFailure =
     }
   // Embedding
   | { readonly code: "FRAME_BLOCKED" }
+  | { readonly code: "FRAME_BLOCKED_BY"; readonly detail: { readonly header: string } }
   | { readonly code: "FRAME_LOAD_TIMEOUT"; readonly detail: { readonly seconds: number } }
   | { readonly code: "FRAME_BUSTED" }
   | { readonly code: "FRAMING_UNSAFE"; readonly detail: { readonly reason: string } }
@@ -47,6 +48,7 @@ export const ALL_FAILURE_CODES: readonly ParallaxErrorCode[] = [
   "DOWNLOAD_FAILED",
   "TRANSLATE_FAILED",
   "FRAME_BLOCKED",
+  "FRAME_BLOCKED_BY",
   "FRAME_LOAD_TIMEOUT",
   "FRAME_BUSTED",
   "FRAMING_UNSAFE",
@@ -83,6 +85,8 @@ function substitutionsFor(failure: ParallaxFailure): readonly string[] {
       return [String(failure.detail.seconds)];
     case "FRAMING_UNSAFE":
       return [failure.detail.reason];
+    case "FRAME_BLOCKED_BY":
+      return [failure.detail.header];
     case "TRANSLATOR_API_MISSING":
     case "LOW_CONFIDENCE":
     case "ACTIVATION_REQUIRED":

@@ -3,35 +3,57 @@
     "message": "Read a page and its translation side by side, in the same tab.",
     "description": "Extension description shown in the Chrome Web Store and on chrome://extensions"
   },
-
   "error_unsupported_page": {
     "message": "parallax cannot run on $SCHEME$ pages — Chrome blocks extensions there.",
-    "placeholders": { "scheme": { "content": "$1", "example": "chrome:" } }
+    "placeholders": {
+      "scheme": {
+        "content": "$1",
+        "example": "chrome:"
+      }
+    }
   },
   "error_injection_failed": {
     "message": "parallax could not start on this tab: $REASON$",
     "placeholders": {
-      "reason": { "content": "$1", "example": "Cannot access contents of the page" }
+      "reason": {
+        "content": "$1",
+        "example": "Cannot access contents of the page"
+      }
     }
   },
   "error_window_too_small": {
     "message": "The window is too narrow to split. It needs at least $REQUIRED$ px.",
-    "placeholders": { "required": { "content": "$1", "example": "248" } }
+    "placeholders": {
+      "required": {
+        "content": "$1",
+        "example": "248"
+      }
+    }
   },
-
   "error_translator_api_missing": {
     "message": "Chrome's built-in Translator API is not available. parallax needs Chrome 138 or later on desktop; it does not work on Android or iOS."
   },
   "error_translation_unavailable": {
     "message": "Chrome cannot translate $SOURCE$ to $TARGET$ on this device.",
     "placeholders": {
-      "source": { "content": "$1", "example": "en" },
-      "target": { "content": "$2", "example": "ja" }
+      "source": {
+        "content": "$1",
+        "example": "en"
+      },
+      "target": {
+        "content": "$2",
+        "example": "ja"
+      }
     }
   },
   "error_same_language": {
     "message": "This page is already in $LANGUAGE$.",
-    "placeholders": { "language": { "content": "$1", "example": "ja" } }
+    "placeholders": {
+      "language": {
+        "content": "$1",
+        "example": "ja"
+      }
+    }
   },
   "error_low_confidence": {
     "message": "Could not determine this page's language. Pick a source language in the popup."
@@ -41,32 +63,63 @@
   },
   "error_download_failed": {
     "message": "The language pack could not be downloaded: $REASON$",
-    "placeholders": { "reason": { "content": "$1", "example": "NetworkError" } }
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "NetworkError"
+      }
+    }
   },
   "error_translate_failed": {
     "message": "Translation stopped after $DONE$ of $TOTAL$ segments: $REASON$",
     "placeholders": {
-      "done": { "content": "$1", "example": "128" },
-      "total": { "content": "$2", "example": "402" },
-      "reason": { "content": "$3", "example": "the model was unloaded" }
+      "done": {
+        "content": "$1",
+        "example": "128"
+      },
+      "total": {
+        "content": "$2",
+        "example": "402"
+      },
+      "reason": {
+        "content": "$3",
+        "example": "the model was unloaded"
+      }
     }
   },
-
   "error_frame_blocked": {
     "message": "This site refuses to be embedded (X-Frame-Options: DENY, or a Content-Security-Policy of frame-ancestors 'none'), so it cannot be shown in a split view. Open the parallax toolbar icon to allow it for this site."
   },
+  "error_frame_blocked_by": {
+    "message": "This site refuses to be embedded ($HEADER$), so it cannot be shown in a split view. Open the parallax toolbar icon to allow it for this site.",
+    "placeholders": {
+      "header": {
+        "content": "$1",
+        "example": "X-Frame-Options: DENY"
+      }
+    }
+  },
   "error_frame_load_timeout": {
     "message": "The page did not finish loading in the split view within $SECONDS$ seconds.",
-    "placeholders": { "seconds": { "content": "$1", "example": "10" } }
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "10"
+      }
+    }
   },
   "error_frame_busted": {
     "message": "This site navigates away when it is embedded, so it cannot be shown in a split view."
   },
   "error_framing_unsafe": {
     "message": "parallax will not override this site's framing rules: its Content-Security-Policy uses a per-response $REASON$, and rewriting the policy would stop the page's own scripts from running.",
-    "placeholders": { "reason": { "content": "$1", "example": "nonce" } }
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "nonce"
+      }
+    }
   },
-
   "error_no_anchors": {
     "message": "Scroll sync is unavailable: this page has no block-level anchors to align on."
   }

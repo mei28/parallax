@@ -5,7 +5,7 @@
 // directive means reading the value and setting a new one. That is safe only when the rest
 // of the policy does not depend on this particular response — which nonces do.
 import { describe, expect, it } from "vitest";
-import { planCspRewrite } from "../../src/shared/csp.ts";
+import { describeFramingRefusal, planCspRewrite } from "../../src/shared/csp.ts";
 
 describe("planCspRewrite", () => {
   it("leaves a policy alone when it says nothing about framing", () => {
@@ -63,5 +63,47 @@ describe("planCspRewrite", () => {
 
   it("ignores a nonce when there is no framing directive to remove", () => {
     expect(planCspRewrite("script-src 'nonce-r4nd0m'")).toEqual({ kind: "keep" });
+  });
+});
+
+// Which header actually refused the embed.
+//
+// Naming the wrong one is worse than naming none: X sends X-Frame-Options: SAMEORIGIN, which
+// is harmless here because both panes are same-origin, and refuses through frame-ancestors
+// instead. A message blaming XFO would send the reader looking in the wrong place.
+describe("describeFramingRefusal", () => {
+  it("names X-Frame-Options when it denies outright", () => {
+    expect(describeFramingRefusal("DENY", null)).toBe("X-Frame-Options: DENY");
+  });
+
+  it("says nothing about SAMEORIGIN, which same-origin panes satisfy", () => {
+    expect(describeFramingRefusal("SAMEORIGIN", null)).toBeNull();
+  });
+
+  it("names frame-ancestors when the policy allows no ancestor", () => {
+    expect(describeFramingRefusal(null, "frame-ancestors 'none'")).toBe(
+      "Content-Security-Policy: frame-ancestors 'none'",
+    );
+  });
+
+  it("names frame-ancestors when it lists only other origins", () => {
+    expect(describeFramingRefusal(null, "frame-ancestors https://elsewhere.test")).toBe(
+      "Content-Security-Policy: frame-ancestors https://elsewhere.test",
+    );
+  });
+
+  it("says nothing when the policy permits the page's own origin", () => {
+    expect(describeFramingRefusal(null, "frame-ancestors 'self'")).toBeNull();
+  });
+
+  it("prefers frame-ancestors, which the spec says overrides X-Frame-Options", () => {
+    expect(describeFramingRefusal("SAMEORIGIN", "default-src 'self'; frame-ancestors 'none'")).toBe(
+      "Content-Security-Policy: frame-ancestors 'none'",
+    );
+  });
+
+  it("says nothing when neither header restricts framing", () => {
+    expect(describeFramingRefusal(null, "default-src 'self'")).toBeNull();
+    expect(describeFramingRefusal(null, null)).toBeNull();
   });
 });

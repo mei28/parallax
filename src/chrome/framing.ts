@@ -7,7 +7,7 @@
 //
 // Session rules rather than dynamic ones, so the weakening cannot outlive the browser, and
 // tab-scoped conditions so it cannot outlive the split that asked for it.
-import { planCspRewrite } from "../shared/csp.ts";
+import { describeFramingRefusal, planCspRewrite } from "../shared/csp.ts";
 import { buildFramingRules, framingRuleId } from "../shared/framing-rules.ts";
 
 export type ArmResult =
@@ -63,6 +63,27 @@ export async function armFraming(tabId: number, url: string): Promise<ArmResult>
     return { kind: "failed", reason: error instanceof Error ? error.message : String(error) };
   }
   return { kind: "armed" };
+}
+
+/**
+ * Which header refused the embed.
+ *
+ * Needs a live request, and therefore the host permission that activeTab grants for the tab
+ * the reader acted in. Returns null when that request cannot be made, in which case the
+ * reader is told the site refused without being told a header that might be the wrong one.
+ */
+export async function diagnoseFraming(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url, { method: "GET", credentials: "include" });
+    const refusal = describeFramingRefusal(
+      response.headers.get("x-frame-options"),
+      response.headers.get("content-security-policy"),
+    );
+    await response.body?.cancel();
+    return refusal;
+  } catch {
+    return null;
+  }
 }
 
 /** Put the site's own framing rules back. Safe to call when nothing was armed. */

@@ -66,3 +66,39 @@ export function planCspRewrite(header: string | null): CspPlan {
   }
   return { kind: "replace", value: kept.join(", ") };
 }
+
+/**
+ * Which header refused the embed, phrased as the reader would find it in DevTools.
+ *
+ * Both panes are same-origin with the page, so `X-Frame-Options: SAMEORIGIN` and
+ * `frame-ancestors 'self'` are satisfied and are not the reason for a refusal. Naming them
+ * would send the reader looking in the wrong place — X sends SAMEORIGIN and refuses through
+ * frame-ancestors instead.
+ *
+ * @returns null when neither header restricts framing, which means something else refused.
+ */
+export function describeFramingRefusal(
+  xFrameOptions: string | null,
+  contentSecurityPolicy: string | null,
+): string | null {
+  // Where a policy sets frame-ancestors, the spec says X-Frame-Options is ignored, so it is
+  // the honest thing to name.
+  const directive = (contentSecurityPolicy ?? "")
+    .split(/[;,]/u)
+    .map((part) => part.trim())
+    .find((part) => /^frame-ancestors\b/iu.test(part));
+
+  if (directive !== undefined) {
+    const sources = directive
+      .replace(/^frame-ancestors\b/iu, "")
+      .trim()
+      .toLowerCase();
+    const permitsSelf = sources.split(/\s+/u).includes("'self'") || sources === "*";
+    return permitsSelf ? null : `Content-Security-Policy: ${directive}`;
+  }
+
+  if (xFrameOptions !== null && /^\s*deny\s*$/iu.test(xFrameOptions)) {
+    return `X-Frame-Options: ${xFrameOptions.trim().toUpperCase()}`;
+  }
+  return null;
+}

@@ -8,7 +8,7 @@ import { renderMessage } from "../chrome/i18n.ts";
 import { describeFailure, ParallaxError } from "../shared/errors.ts";
 import type { LanguagePair, PaneId, Preferences } from "../shared/types.ts";
 import { openPane } from "./frames.ts";
-import { releaseFramingOverride, requestFramingOverride } from "./framing.ts";
+import { diagnoseFraming, releaseFramingOverride, requestFramingOverride } from "./framing.ts";
 import type { Overlay } from "./overlay.ts";
 import { createOverlay } from "./overlay.ts";
 import { pairDocuments } from "./pairing.ts";
@@ -123,6 +123,7 @@ export interface ControllerDeps {
   createTranslator: typeof createTranslator;
   openPane: typeof openPane;
   requestFramingOverride: typeof requestFramingOverride;
+  diagnoseFraming: typeof diagnoseFraming;
   releaseFramingOverride: typeof releaseFramingOverride;
   createOverlay: typeof createOverlay;
 }
@@ -132,6 +133,7 @@ const REAL_DEPS: ControllerDeps = {
   createTranslator,
   openPane,
   requestFramingOverride,
+  diagnoseFraming,
   releaseFramingOverride,
   createOverlay,
 };
@@ -271,6 +273,19 @@ export async function startSplit(
     reportBlocking(overlay, error);
     if (error instanceof ParallaxError && error.code === "FRAME_BLOCKED") {
       hooks.onFrameBlocked(new URL(doc.location.href).origin);
+      // Which header refused takes a live request, so the card starts general and gets
+      // specific once the answer arrives. Naming the wrong header would be worse than
+      // naming none: X sends X-Frame-Options: SAMEORIGIN, which two same-origin panes
+      // satisfy, and refuses through frame-ancestors instead.
+      void deps.diagnoseFraming(doc.location.href).then((refusal) => {
+        if (refusal !== null && open) {
+          overlay.showCard(
+            renderMessage(
+              describeFailure({ code: "FRAME_BLOCKED_BY", detail: { header: refusal } }),
+            ),
+          );
+        }
+      });
     }
     return controller;
   }

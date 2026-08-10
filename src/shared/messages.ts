@@ -16,7 +16,8 @@ export type Message =
  */
 export type FramingMessage =
   | { readonly type: "ARM_FRAMING"; readonly url: string }
-  | { readonly type: "DISARM_FRAMING" };
+  | { readonly type: "DISARM_FRAMING" }
+  | { readonly type: "DIAGNOSE_FRAMING"; readonly url: string };
 
 export interface StateResponse {
   readonly active: boolean;
@@ -30,3 +31,8 @@ export interface StateResponse {
 }
 
 export type FramingResponse = ArmResult;
+
+/** Which header refused the embed, or null when it could not be determined. */
+export interface DiagnoseResponse {
+  readonly refusal: string | null;
+}
