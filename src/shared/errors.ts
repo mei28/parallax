@@ -27,6 +27,8 @@ export type ParallaxFailure =
   // Embedding
   | { readonly code: "FRAME_BLOCKED" }
   | { readonly code: "FRAME_BLOCKED_BY"; readonly detail: { readonly header: string } }
+  | { readonly code: "FRAME_BLOCKED_UNKNOWN" }
+  | { readonly code: "FRAME_BLOCKED_DESPITE_OVERRIDE" }
   | { readonly code: "FRAME_LOAD_TIMEOUT"; readonly detail: { readonly seconds: number } }
   | { readonly code: "FRAME_BUSTED" }
   | { readonly code: "FRAMING_UNSAFE"; readonly detail: { readonly reason: string } }
@@ -49,6 +51,8 @@ export const ALL_FAILURE_CODES: readonly ParallaxErrorCode[] = [
   "TRANSLATE_FAILED",
   "FRAME_BLOCKED",
   "FRAME_BLOCKED_BY",
+  "FRAME_BLOCKED_UNKNOWN",
+  "FRAME_BLOCKED_DESPITE_OVERRIDE",
   "FRAME_LOAD_TIMEOUT",
   "FRAME_BUSTED",
   "FRAMING_UNSAFE",
@@ -91,6 +95,8 @@ function substitutionsFor(failure: ParallaxFailure): readonly string[] {
     case "LOW_CONFIDENCE":
     case "ACTIVATION_REQUIRED":
     case "FRAME_BLOCKED":
+    case "FRAME_BLOCKED_UNKNOWN":
+    case "FRAME_BLOCKED_DESPITE_OVERRIDE":
     case "FRAME_BUSTED":
     case "NO_ANCHORS":
       return [];

@@ -212,10 +212,39 @@ describe("a site that refuses to be embedded", () => {
     expect(overlay.calls.some((call) => call.startsWith("card:"))).toBe(true);
   });
 
-  it("records the origin, which is the only way the popup can offer an override", async () => {
-    await startSplit(document, DEFAULT_PREFERENCES, hooks, blocked());
+  it("records the origin when a header is to blame, so the popup can offer an override", async () => {
+    await startSplit(document, DEFAULT_PREFERENCES, hooks, {
+      ...blocked(),
+      diagnoseFraming: async () => "X-Frame-Options: DENY",
+    } as ControllerDeps);
+    await Promise.resolve();
 
     expect(hooks.blocked).toEqual([window.location.origin]);
+  });
+
+  // X permits same-origin framing in both headers and still will not load. Offering a
+  // permission there would take something from the reader and give nothing back.
+  it("offers no override when the headers already permit embedding", async () => {
+    await startSplit(document, DEFAULT_PREFERENCES, hooks, {
+      ...blocked(),
+      diagnoseFraming: async () => null,
+    } as ControllerDeps);
+    await Promise.resolve();
+
+    expect(hooks.blocked).toEqual([]);
+    expect(overlay.calls.at(-1)).toContain("error_frame_blocked_unknown");
+  });
+
+  it("says the permission did not help rather than offering it again", async () => {
+    await startSplit(document, DEFAULT_PREFERENCES, hooks, {
+      ...blocked(),
+      requestFramingOverride: async () => ({ kind: "armed" }),
+      diagnoseFraming: async () => "X-Frame-Options: DENY",
+    } as ControllerDeps);
+    await Promise.resolve();
+
+    expect(hooks.blocked).toEqual([]);
+    expect(overlay.calls.at(-1)).toContain("error_frame_blocked_despite_override");
   });
 
   it("does not offer an override that could not be granted safely", async () => {

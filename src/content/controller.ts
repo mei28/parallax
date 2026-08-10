@@ -272,19 +272,37 @@ export async function startSplit(
     }
     reportBlocking(overlay, error);
     if (error instanceof ParallaxError && error.code === "FRAME_BLOCKED") {
-      hooks.onFrameBlocked(new URL(doc.location.href).origin);
-      // Which header refused takes a live request, so the card starts general and gets
-      // specific once the answer arrives. Naming the wrong header would be worse than
-      // naming none: X sends X-Frame-Options: SAMEORIGIN, which two same-origin panes
-      // satisfy, and refuses through frame-ancestors instead.
+      /**
+       * A refused embed has three quite different explanations, and only one of them is
+       * worth asking the reader for a permission over.
+       *
+       * Which header refused takes a live request, so the card starts general and becomes
+       * specific once the worker answers. Naming the wrong header would be worse than
+       * naming none: X sends X-Frame-Options: SAMEORIGIN and frame-ancestors 'self', both
+       * of which two same-origin panes satisfy — its refusal is not a header at all, and
+       * no permission will change it.
+       */
       void deps.diagnoseFraming(doc.location.href).then((refusal) => {
-        if (refusal !== null && open) {
-          overlay.showCard(
-            renderMessage(
-              describeFailure({ code: "FRAME_BLOCKED_BY", detail: { header: refusal } }),
-            ),
-          );
+        if (!open) {
+          return;
         }
+        if (framing.kind === "armed") {
+          // The permission was granted and the headers were rewritten, and it still would
+          // not load. Do not offer the override again.
+          overlay.showCard(
+            renderMessage(describeFailure({ code: "FRAME_BLOCKED_DESPITE_OVERRIDE" })),
+          );
+          return;
+        }
+        if (refusal === null) {
+          overlay.showCard(renderMessage(describeFailure({ code: "FRAME_BLOCKED_UNKNOWN" })));
+          return;
+        }
+        overlay.showCard(
+          renderMessage(describeFailure({ code: "FRAME_BLOCKED_BY", detail: { header: refusal } })),
+        );
+        // Recorded only here, so the popup offers an override exactly when one could help.
+        hooks.onFrameBlocked(new URL(doc.location.href).origin);
       });
     }
     return controller;

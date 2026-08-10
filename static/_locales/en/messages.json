@@ -99,6 +99,12 @@
       }
     }
   },
+  "error_frame_blocked_unknown": {
+    "message": "This site did not load in a split view, even though its headers permit embedding. Some sites refuse to run inside a frame for reasons no permission can change."
+  },
+  "error_frame_blocked_despite_override": {
+    "message": "This site still refuses to be embedded even with permission granted, so it cannot be shown in a split view. The permission can be withdrawn from chrome://extensions."
+  },
   "error_frame_load_timeout": {
     "message": "The page did not finish loading in the split view within $SECONDS$ seconds.",
     "placeholders": {

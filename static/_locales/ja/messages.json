@@ -99,6 +99,12 @@
       }
     }
   },
+  "error_frame_blocked_unknown": {
+    "message": "このサイトは分割表示で読み込めませんでした。ヘッダは埋め込みを許可しているので、権限では変えられない別の理由でフレーム内での動作を拒んでいます。"
+  },
+  "error_frame_blocked_despite_override": {
+    "message": "許可を与えても、このサイトは埋め込みを拒否したままでした。分割表示はできません。権限は chrome://extensions から取り消せます。"
+  },
   "error_frame_load_timeout": {
     "message": "分割表示の中でページが $SECONDS$ 秒以内に読み込み終わりませんでした。",
     "placeholders": {

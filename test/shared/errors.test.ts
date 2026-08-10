@@ -105,6 +105,8 @@ describe("locale catalogues", () => {
         detail: { done: 1, total: 2, reason: "stopped" },
       },
       FRAME_BLOCKED: { code: "FRAME_BLOCKED" },
+      FRAME_BLOCKED_UNKNOWN: { code: "FRAME_BLOCKED_UNKNOWN" },
+      FRAME_BLOCKED_DESPITE_OVERRIDE: { code: "FRAME_BLOCKED_DESPITE_OVERRIDE" },
       FRAME_BLOCKED_BY: {
         code: "FRAME_BLOCKED_BY",
         detail: { header: "X-Frame-Options: DENY" },
