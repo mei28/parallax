@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.tgz
+*.zip
+.tmp/
+.DS_Store

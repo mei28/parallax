@@ -1,0 +1,30 @@
+{
+  "name": "parallax",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Read a page and its translation side by side, in the same tab",
+  "type": "module",
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "dev": "node esbuild.mjs --watch",
+    "test": "vitest run",
+    "lint": "biome check .",
+    "fmt": "biome check --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@biomejs/biome",
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.7",
+    "@types/chrome": "^0.2.5",
+    "@types/dom-chromium-ai": "^0.0.17",
+    "esbuild": "^0.28.2",
+    "jsdom": "^30.0.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  }
+}
