@@ -315,14 +315,35 @@ export async function startSplit(
     queue.enqueue(targets);
   };
 
+  // Never `void run()`. Anything thrown past the translator's own catch — a frame that went
+  // away, a realm without the observer — would otherwise become an unhandled rejection and
+  // leave the reader looking at an untranslated pane with nothing to explain it.
+  const runAndReport = (): void => {
+    run().catch((error: unknown) => {
+      overlay.setStatus(
+        "error",
+        renderMessage(
+          describeFailure({
+            code: "TRANSLATE_FAILED",
+            detail: {
+              done: 0,
+              total: 0,
+              reason: error instanceof Error ? error.message : String(error),
+            },
+          }),
+        ),
+      );
+    });
+  };
+
   if (availability === "available") {
-    void run();
+    runAndReport();
   } else {
     // create() needs transient activation before it will download a pack, and a click on the
     // toolbar icon does not give the page any. This click does.
     overlay.showCard(`Translate this page into ${pair.target}?`, {
       label: "Translate",
-      onClick: () => void run(),
+      onClick: runAndReport,
     });
   }
 
