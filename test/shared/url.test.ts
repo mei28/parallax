@@ -21,7 +21,7 @@ describe("isSplittableUrl", () => {
   });
 
   it("rejects local files, which extensions cannot read without file access", () => {
-    expect(isSplittableUrl("file:///Users/mei/note.html")).toBe(false);
+    expect(isSplittableUrl("file:///home/reader/note.html")).toBe(false);
   });
 
   it("rejects the Chrome Web Store, where content scripts are refused", () => {
