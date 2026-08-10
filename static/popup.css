@@ -113,3 +113,28 @@ select {
 #error:empty {
   display: none;
 }
+
+#override {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, CanvasText 20%, Canvas);
+  border-radius: 6px;
+  background: color-mix(in srgb, CanvasText 5%, Canvas);
+}
+
+#override[hidden] {
+  display: none;
+}
+
+#override-text {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+#allow {
+  cursor: pointer;
+}

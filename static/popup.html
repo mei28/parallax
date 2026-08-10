@@ -25,6 +25,13 @@
     <button type="button" id="toggle" class="primary">Split this page</button>
     <p id="error" role="alert"></p>
 
+    <!-- Only an extension page can call permissions.request, so the override for a site that
+         refuses to be embedded has to be offered here rather than on the in-page card. -->
+    <div id="override" hidden>
+      <p id="override-text"></p>
+      <button type="button" id="allow">Allow and split</button>
+    </div>
+
     <script src="popup.js"></script>
   </body>
 </html>

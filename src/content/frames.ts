@@ -1,6 +1,7 @@
 // Getting a usable document out of each pane's iframe, or saying exactly why there isn't one.
 import { FRAME_LOAD_TIMEOUT_MS } from "../shared/constants.ts";
 import { ParallaxError } from "../shared/errors.ts";
+import { isBlankUrl, isSameDocument } from "../shared/url.ts";
 
 /**
  * Stop the browser translating a pane behind our back.
@@ -68,10 +69,16 @@ export async function openPane(
     throw new ParallaxError({ code: "FRAME_BLOCKED" });
   }
 
+  // Where the frame actually ended up. Reading its document is not evidence the page loaded:
+  // a frame refused by CSP frame-ancestors fires `load` while still on the initial empty
+  // document, which is same-origin and reads perfectly well. Only the URL tells them apart.
+  const actual = frame.contentWindow?.location.href ?? "";
+  if (isBlankUrl(actual)) {
+    throw new ParallaxError({ code: "FRAME_BLOCKED" });
+  }
   // The sandbox withholds allow-top-navigation, so a frame-busting site cannot take the tab
   // with it. It can still navigate itself away, which leaves a pane showing the wrong page.
-  const actual = frame.contentWindow?.location.href;
-  if (actual !== undefined && actual !== expectedUrl && actual !== "about:blank") {
+  if (!isSameDocument(expectedUrl, actual)) {
     throw new ParallaxError({ code: "FRAME_BUSTED" });
   }
 

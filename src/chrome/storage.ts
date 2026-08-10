@@ -18,3 +18,30 @@ export async function savePreferences(patch: Partial<Preferences>): Promise<Pref
   await chrome.storage.local.set({ [KEY]: merged });
   return merged;
 }
+
+const BLOCKED_KEY = "lastBlockedOrigin";
+
+/**
+ * The origin that last refused to be embedded.
+ *
+ * Kept in storage rather than in the content script's memory because the popup is what has
+ * to act on it, and only an extension page can call permissions.request. Storage survives
+ * the content script, the service worker and the popup all being torn down between the
+ * failure and the reader getting round to doing something about it.
+ *
+ * storage.local rather than storage.session: session storage is closed to content scripts
+ * unless the worker widens its access level, and this is written from one.
+ */
+export async function recordBlockedOrigin(origin: string): Promise<void> {
+  await chrome.storage.local.set({ [BLOCKED_KEY]: origin });
+}
+
+export async function loadBlockedOrigin(): Promise<string | null> {
+  const stored = await chrome.storage.local.get(BLOCKED_KEY);
+  const origin = stored[BLOCKED_KEY];
+  return typeof origin === "string" ? origin : null;
+}
+
+export async function clearBlockedOrigin(): Promise<void> {
+  await chrome.storage.local.remove(BLOCKED_KEY);
+}

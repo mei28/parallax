@@ -38,10 +38,14 @@ import styles from "./overlay.css";
 /**
  * Frame sandbox.
  *
- * `allow-same-origin` is what the whole design rests on: without it the panes would be
- * opaque and neither translation nor scroll sync could reach them. `allow-top-navigation` is
- * deliberately absent, which turns a frame-busting site's `top.location = self.location`
- * into an error inside the frame instead of the tab navigating away underneath the reader.
+ * Chrome warns that an iframe with both allow-scripts and allow-same-origin "can escape its
+ * sandboxing", and it is right: this is not a security boundary and is not meant to be.
+ * `allow-same-origin` is what the whole design rests on — without it the panes would be
+ * opaque and neither translation nor scroll sync could reach them.
+ *
+ * The one thing the attribute buys is what it withholds. Without `allow-top-navigation`, a
+ * frame-busting site's `top.location = self.location` throws inside its own frame instead of
+ * navigating the tab out from under the reader.
  */
 const FRAME_SANDBOX = "allow-same-origin allow-scripts allow-forms allow-popups";
 

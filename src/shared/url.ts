@@ -23,6 +23,38 @@ const BLOCKED_HOSTS: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * Whether a frame is still sitting on the initial empty document.
+ *
+ * A frame refused by CSP frame-ancestors fires `load` having gone nowhere at all. The empty
+ * document it stays on is same-origin and perfectly readable, so being able to reach a
+ * frame's document says nothing about whether the page arrived — this does.
+ */
+export function isBlankUrl(url: string): boolean {
+  return url === "" || url === "about:blank" || url.startsWith("about:blank#");
+}
+
+/**
+ * Whether a frame ended up on the page it was asked for.
+ *
+ * Compared by origin, path and query, because the browser normalises a missing trailing
+ * slash and a fragment never reaches the server, while a different query is a different
+ * page. Anything unparseable is not a match; there is nothing sensible to assume.
+ */
+export function isSameDocument(requested: string, actual: string): boolean {
+  let left: URL;
+  let right: URL;
+  try {
+    left = new URL(requested);
+    right = new URL(actual);
+  } catch {
+    return false;
+  }
+  return (
+    left.origin === right.origin && left.pathname === right.pathname && left.search === right.search
+  );
+}
+
+/**
  * Whether a split view can be started on this URL.
  *
  * The popup calls this before injecting anything, so an unsupported page is a disabled

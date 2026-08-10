@@ -8,6 +8,7 @@ import { renderMessage } from "../chrome/i18n.ts";
 import { describeFailure, ParallaxError } from "../shared/errors.ts";
 import type { LanguagePair, PaneId, Preferences } from "../shared/types.ts";
 import { openPane } from "./frames.ts";
+import { releaseFramingOverride, requestFramingOverride } from "./framing.ts";
 import type { Overlay } from "./overlay.ts";
 import { createOverlay } from "./overlay.ts";
 import { createResizer } from "./resizer.ts";
@@ -45,6 +46,11 @@ export interface Controller {
 export interface ControllerHooks {
   /** Persist a ratio or orientation the reader settled on. */
   onPreferencesChanged(patch: Partial<Preferences>): void;
+  /**
+   * A site refused to be embedded. Remembered so the popup can offer an override — only an
+   * extension page can call permissions.request, so this cannot be a button on the card.
+   */
+  onFrameBlocked(origin: string): void;
 }
 
 function groupByBlock(doc: Document, nodes: readonly Text[]) {
@@ -113,6 +119,11 @@ export async function startSplit(
   // Before anything is built, so a refusal costs nothing.
   const availability = await checkAvailability(pair);
 
+  // Before the frames exist, because the headers have to be rewritten on their first
+  // request. Costs nothing on a site the reader has not granted: the worker returns without
+  // fetching anything.
+  const framing = await requestFramingOverride(doc.location.href);
+
   const abort = new AbortController();
   const overlay = createOverlay(doc, { url: doc.location.href });
   overlay.setRatio(preferences.ratio);
@@ -145,6 +156,7 @@ export async function startSplit(
       open = false;
       splitting = false;
       abort.abort();
+      void releaseFramingOverride();
       queue?.destroy();
       translator?.destroy();
       overlay.destroy();
@@ -197,12 +209,36 @@ export async function startSplit(
 
   let targetDoc: Document;
   try {
-    [, targetDoc] = await Promise.all([
+    // allSettled rather than all: both panes load the same URL, so whatever refuses one
+    // refuses the other, and Promise.all would leave the second rejection unhandled.
+    const [source, target] = await Promise.allSettled([
       openPane(overlay.frames.source, doc.location.href, abort.signal),
       openPane(overlay.frames.target, doc.location.href, abort.signal),
     ]);
+    if (source.status === "rejected") {
+      throw source.reason;
+    }
+    if (target.status === "rejected") {
+      throw target.reason;
+    }
+    targetDoc = target.value;
   } catch (error) {
+    // The site would not be embedded even with an override, so say why rather than offer
+    // one that cannot help.
+    if (framing.kind === "unsafe") {
+      reportBlocking(
+        overlay,
+        new ParallaxError({
+          code: "FRAMING_UNSAFE",
+          detail: { reason: framing.reason },
+        }),
+      );
+      return controller;
+    }
     reportBlocking(overlay, error);
+    if (error instanceof ParallaxError && error.code === "FRAME_BLOCKED") {
+      hooks.onFrameBlocked(new URL(doc.location.href).origin);
+    }
     return controller;
   }
 

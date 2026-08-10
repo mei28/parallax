@@ -53,7 +53,7 @@
   },
 
   "error_frame_blocked": {
-    "message": "This site refuses to be embedded (X-Frame-Options: DENY, or a Content-Security-Policy of frame-ancestors 'none'), so it cannot be shown in a split view."
+    "message": "This site refuses to be embedded (X-Frame-Options: DENY, or a Content-Security-Policy of frame-ancestors 'none'), so it cannot be shown in a split view. Open the parallax toolbar icon to allow it for this site."
   },
   "error_frame_load_timeout": {
     "message": "The page did not finish loading in the split view within $SECONDS$ seconds.",
@@ -61,6 +61,10 @@
   },
   "error_frame_busted": {
     "message": "This site navigates away when it is embedded, so it cannot be shown in a split view."
+  },
+  "error_framing_unsafe": {
+    "message": "parallax will not override this site's framing rules: its Content-Security-Policy uses a per-response $REASON$, and rewriting the policy would stop the page's own scripts from running.",
+    "placeholders": { "reason": { "content": "$1", "example": "nonce" } }
   },
 
   "error_dom_mismatch": {

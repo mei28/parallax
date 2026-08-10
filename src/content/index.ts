@@ -4,7 +4,7 @@
 // never re-run it. The marker below makes a repeated injection a no-op rather than a second
 // overlay stacked on the first.
 import { renderMessage } from "../chrome/i18n.ts";
-import { savePreferences } from "../chrome/storage.ts";
+import { clearBlockedOrigin, recordBlockedOrigin, savePreferences } from "../chrome/storage.ts";
 import { describeFailure, ParallaxError } from "../shared/errors.ts";
 import type { Message, StateResponse } from "../shared/messages.ts";
 import type { Controller } from "./controller.ts";
@@ -20,6 +20,7 @@ if (window.__parallaxInstalled !== true) {
   window.__parallaxInstalled = true;
 
   let controller: Controller | null = null;
+  let blockedOrigin: string | null = null;
 
   // The controller can close itself — Esc, or the reader dragging the translated pane away —
   // so holding a reference is not the same as there being a split. Ask it.
@@ -32,9 +33,17 @@ if (window.__parallaxInstalled !== true) {
 
   const start = async (message: Extract<Message, { type: "START_SPLIT" }>): Promise<void> => {
     stop();
+    blockedOrigin = null;
+    void clearBlockedOrigin();
     controller = await startSplit(document, message.preferences, {
       onPreferencesChanged(patch) {
         void savePreferences(patch);
+      },
+      onFrameBlocked(origin) {
+        blockedOrigin = origin;
+        // Also written to storage, because the popup is what has to act on it and this
+        // script may be gone by the time the reader opens it.
+        void recordBlockedOrigin(origin);
       },
     });
   };
@@ -43,7 +52,10 @@ if (window.__parallaxInstalled !== true) {
     (message: Message, _sender, respond: (response: StateResponse) => void) => {
       switch (message.type) {
         case "GET_STATE":
-          respond({ active: isActive() });
+          respond({
+            active: isActive(),
+            ...(blockedOrigin === null ? {} : { blockedOrigin }),
+          });
           return false;
 
         case "STOP_SPLIT":
