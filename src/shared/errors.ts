@@ -29,8 +29,7 @@ export type ParallaxFailure =
   | { readonly code: "FRAME_LOAD_TIMEOUT"; readonly detail: { readonly seconds: number } }
   | { readonly code: "FRAME_BUSTED" }
   | { readonly code: "FRAMING_UNSAFE"; readonly detail: { readonly reason: string } }
-  // Scroll sync only. The split survives these.
-  | { readonly code: "DOM_MISMATCH" }
+  // Scroll sync only. The split survives this.
   | { readonly code: "NO_ANCHORS" };
 
 export type ParallaxErrorCode = ParallaxFailure["code"];
@@ -51,7 +50,6 @@ export const ALL_FAILURE_CODES: readonly ParallaxErrorCode[] = [
   "FRAME_LOAD_TIMEOUT",
   "FRAME_BUSTED",
   "FRAMING_UNSAFE",
-  "DOM_MISMATCH",
   "NO_ANCHORS",
 ];
 
@@ -90,7 +88,6 @@ function substitutionsFor(failure: ParallaxFailure): readonly string[] {
     case "ACTIVATION_REQUIRED":
     case "FRAME_BLOCKED":
     case "FRAME_BUSTED":
-    case "DOM_MISMATCH":
     case "NO_ANCHORS":
       return [];
   }

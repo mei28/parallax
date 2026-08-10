@@ -61,13 +61,35 @@ describe("pairDocuments", () => {
     expect(target.querySelectorAll(`[${ATTR_PAIR_ID}]`)).toHaveLength(1);
   });
 
-  it("rejects panes whose tag names diverge", () => {
-    expect(() => pair("<p>A</p>", "<div>A</div>")).toThrow(ParallaxError);
-    expect(() => pair("<p>A</p>", "<div>A</div>")).toThrow(/DOM_MISMATCH/);
+  // Two loads of one URL are never quite identical on a real site. Demanding element-for-
+  // element equality gave up over a single stray <div>; matching on what the blocks say
+  // keeps the ninety-nine that do correspond.
+  it("keeps going when one pane has content the other does not", () => {
+    const { index, target } = pair("<p>A</p><p>B</p>", "<aside>Ad</aside><p>A</p><p>B</p>");
+
+    expect(index.ids).toHaveLength(2);
+    expect(target.querySelector("aside")?.hasAttribute(ATTR_PAIR_ID)).toBe(false);
   });
 
-  it("rejects panes with different element counts", () => {
-    expect(() => pair("<p>A</p>", "<p>A</p><p>B</p>")).toThrow(/DOM_MISMATCH/);
+  it("keeps going when a block is missing from one pane", () => {
+    const { index } = pair("<p>A</p><p>B</p><p>C</p>", "<p>A</p><p>C</p>");
+
+    expect(index.ids).toHaveLength(2);
+  });
+
+  it("leaves out a block whose text differs between the panes", () => {
+    // A relative timestamp reads differently on each load, so it identifies nothing.
+    const { index } = pair(
+      "<p>Stable</p><p>2 minutes ago</p>",
+      "<p>Stable</p><p>3 minutes ago</p>",
+    );
+
+    expect(index.ids).toHaveLength(1);
+  });
+
+  it("still refuses when the panes have nothing in common to anchor on", () => {
+    expect(() => pair("<p>A</p>", "<p>Z</p>")).toThrow(ParallaxError);
+    expect(() => pair("<p>A</p>", "<p>Z</p>")).toThrow(/NO_ANCHORS/);
   });
 
   it("rejects a page with nothing to anchor on", () => {

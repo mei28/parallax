@@ -67,9 +67,6 @@
     "placeholders": { "reason": { "content": "$1", "example": "nonce" } }
   },
 
-  "error_dom_mismatch": {
-    "message": "Scroll sync is unavailable: the two panes rendered different DOM structures."
-  },
   "error_no_anchors": {
     "message": "Scroll sync is unavailable: this page has no block-level anchors to align on."
   }

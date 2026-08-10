@@ -67,9 +67,6 @@
     "placeholders": { "reason": { "content": "$1", "example": "nonce" } }
   },
 
-  "error_dom_mismatch": {
-    "message": "スクロール同期は使えません: 2 つのペインの DOM 構造が一致しませんでした。"
-  },
   "error_no_anchors": {
     "message": "スクロール同期は使えません: このページには基準にできるブロック要素がありません。"
   }

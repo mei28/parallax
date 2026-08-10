@@ -11,7 +11,10 @@ import { openPane } from "./frames.ts";
 import { releaseFramingOverride, requestFramingOverride } from "./framing.ts";
 import type { Overlay } from "./overlay.ts";
 import { createOverlay } from "./overlay.ts";
+import { pairDocuments } from "./pairing.ts";
 import { createResizer } from "./resizer.ts";
+import type { ScrollSync } from "./scroll-sync.ts";
+import { createScrollSync } from "./scroll-sync.ts";
 import { collectTextNodes } from "./text-nodes.ts";
 import type { Queue, TranslateTarget } from "./translate-queue.ts";
 import { createQueue } from "./translate-queue.ts";
@@ -235,6 +238,7 @@ export async function startSplit(
 
   overlay.setStatus("idle", "Loading both panes…");
 
+  let sourceDoc: Document;
   let targetDoc: Document;
   try {
     // allSettled rather than all: both panes load the same URL, so whatever refuses one
@@ -249,6 +253,7 @@ export async function startSplit(
     if (target.status === "rejected") {
       throw target.reason;
     }
+    sourceDoc = source.value;
     targetDoc = target.value;
   } catch (error) {
     // The site would not be embedded even with an override, so say why rather than offer
@@ -299,7 +304,9 @@ export async function startSplit(
           overlay.setStatus("ready", "Translated.");
         }
       },
-      onCommit() {},
+      onCommit() {
+        scrollSync?.invalidate();
+      },
       onError(failure) {
         overlay.setStatus(
           "error",
@@ -314,6 +321,26 @@ export async function startSplit(
     observeViewport(frameWindow, blocks, queue, abort.signal);
     queue.enqueue(targets);
   };
+
+  // Pairing runs before any translation, while the two documents are still identical. It is
+  // both the check that they are, and the source of the ids the panes align on. Failing it
+  // costs only the scroll sync — the split itself is unaffected — so it is reported in the
+  // toolbar rather than as a card over the panes.
+  let scrollSync: ScrollSync | null = null;
+  try {
+    const index = pairDocuments(sourceDoc.body, targetDoc.body);
+    scrollSync = createScrollSync({
+      documents: { source: sourceDoc, target: targetDoc },
+      index,
+      signal: abort.signal,
+    });
+  } catch (error) {
+    if (error instanceof ParallaxError) {
+      overlay.setStatus("error", renderMessage(describeFailure(error.failure)));
+    } else {
+      throw error;
+    }
+  }
 
   // Never `void run()`. Anything thrown past the translator's own catch — a frame that went
   // away, a realm without the observer — would otherwise become an unhandled rejection and

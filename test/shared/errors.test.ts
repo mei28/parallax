@@ -108,7 +108,6 @@ describe("locale catalogues", () => {
       FRAME_LOAD_TIMEOUT: { code: "FRAME_LOAD_TIMEOUT", detail: { seconds: 10 } },
       FRAME_BUSTED: { code: "FRAME_BUSTED" },
       FRAMING_UNSAFE: { code: "FRAMING_UNSAFE", detail: { reason: "nonce" } },
-      DOM_MISMATCH: { code: "DOM_MISMATCH" },
       NO_ANCHORS: { code: "NO_ANCHORS" },
     } as const;
 
