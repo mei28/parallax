@@ -106,10 +106,38 @@ function observeViewport(
   signal.addEventListener("abort", () => observer.disconnect(), { once: true });
 }
 
+/**
+ * The collaborators that reach outside this module: the Translator API, the frames, the
+ * service worker, the DOM.
+ *
+ * Injected so the lifecycle here can be exercised without any of them. None can be stubbed
+ * from a test otherwise — the Translator API does not exist in jsdom, an iframe never loads
+ * there, and the overlay's shadow root is closed on purpose. Every bug found in this module
+ * so far has been a lifecycle bug, which is exactly what this seam makes reachable.
+ */
+export interface ControllerDeps {
+  checkAvailability: typeof checkAvailability;
+  createTranslator: typeof createTranslator;
+  openPane: typeof openPane;
+  requestFramingOverride: typeof requestFramingOverride;
+  releaseFramingOverride: typeof releaseFramingOverride;
+  createOverlay: typeof createOverlay;
+}
+
+const REAL_DEPS: ControllerDeps = {
+  checkAvailability,
+  createTranslator,
+  openPane,
+  requestFramingOverride,
+  releaseFramingOverride,
+  createOverlay,
+};
+
 export async function startSplit(
   doc: Document,
   preferences: Preferences,
   hooks: ControllerHooks,
+  deps: ControllerDeps = REAL_DEPS,
 ): Promise<Controller> {
   const pair: LanguagePair = {
     source: preferences.sourceLanguage,
@@ -117,15 +145,15 @@ export async function startSplit(
   };
 
   // Before anything is built, so a refusal costs nothing.
-  const availability = await checkAvailability(pair);
+  const availability = await deps.checkAvailability(pair);
 
   // Before the frames exist, because the headers have to be rewritten on their first
   // request. Costs nothing on a site the reader has not granted: the worker returns without
   // fetching anything.
-  const framing = await requestFramingOverride(doc.location.href);
+  const framing = await deps.requestFramingOverride(doc.location.href);
 
   const abort = new AbortController();
-  const overlay = createOverlay(doc, { url: doc.location.href });
+  const overlay = deps.createOverlay(doc, { url: doc.location.href });
   overlay.setRatio(preferences.ratio);
   overlay.setOrientation(preferences.orientation);
 
@@ -156,7 +184,7 @@ export async function startSplit(
       open = false;
       splitting = false;
       abort.abort();
-      void releaseFramingOverride();
+      void deps.releaseFramingOverride();
       queue?.destroy();
       translator?.destroy();
       overlay.destroy();
@@ -212,8 +240,8 @@ export async function startSplit(
     // allSettled rather than all: both panes load the same URL, so whatever refuses one
     // refuses the other, and Promise.all would leave the second rejection unhandled.
     const [source, target] = await Promise.allSettled([
-      openPane(overlay.frames.source, doc.location.href, abort.signal),
-      openPane(overlay.frames.target, doc.location.href, abort.signal),
+      deps.openPane(overlay.frames.source, doc.location.href, abort.signal),
+      deps.openPane(overlay.frames.target, doc.location.href, abort.signal),
     ]);
     if (source.status === "rejected") {
       throw source.reason;
@@ -244,7 +272,7 @@ export async function startSplit(
 
   const run = async (): Promise<void> => {
     try {
-      translator = await createTranslator(pair, {
+      translator = await deps.createTranslator(pair, {
         onDownloadProgress(fraction) {
           overlay.setStatus("downloading", `Downloading the language pack — ${fraction * 100}%`);
           overlay.setProgress(fraction);
