@@ -15,11 +15,13 @@ Then, for each release:
    `package.json` in step with it. The store refuses an upload whose version is not higher
    than the last published one, so this is not a step to leave until after the upload.
 2. `just check && just package` — the gate, then `parallax.zip`.
-3. **New Item**, upload the zip. The extension ID is assigned here and never changes; the
-   store listing URL is built from it.
+3. **New Item**, upload the zip. Nothing else in the dashboard exists until this is done —
+   the item's tabs, Store listing among them, appear only once a package has created the
+   item. The extension ID is assigned here and never changes; the listing URL is built
+   from it.
 4. **Store listing**: name, both descriptions, category and language from below; the five
-   screenshots and the promo tile from `store-assets/screenshots/`. The icon comes from the
-   package, so there is nothing to upload for it.
+   screenshots and the promo tile from `store-assets/screenshots/`; and the store icon,
+   which is uploaded here separately from the one inside the package.
 5. **Privacy**: the single purpose and the four permission justifications from below, the
    privacy policy URL, and the data-usage declarations — none of the categories apply, and
    all three certifications can be affirmed.
@@ -184,6 +186,24 @@ All drawn by `just screenshots`, into `store-assets/screenshots/`.
 
 | Asset | Size | File |
 |---|---|---|
-| Screenshots | 1280×800 | `parallax-1-hero` … `parallax-5-private` |
-| Small promo tile | 440×280 | `parallax-promo-440x280` |
-| Icon | 128×128 | Already in the package |
+| Screenshots | 1280×800 | `store-assets/screenshots/parallax-1-hero` … `-5-private` |
+| Small promo tile | 440×280 | `store-assets/screenshots/parallax-promo-440x280` |
+| Store icon | 128×128 | `static/icons/icon-128.png` — uploaded to the listing, separately from the copy inside the package |
+
+## Where each field goes
+
+| Tab | Field | Value |
+|---|---|---|
+| Store listing | Name | see Item details |
+| Store listing | Summary | Short description |
+| Store listing | Description | Detailed description |
+| Store listing | Category / Language | Productivity / English |
+| Store listing | Graphic assets | the table above |
+| Store listing | Homepage URL | `https://github.com/mei28/parallax` |
+| Store listing | Support URL | `https://github.com/mei28/parallax/issues` |
+| Privacy practices | Single purpose | see below |
+| Privacy practices | Permission justification | one box per permission, below |
+| Privacy practices | Remote code | No |
+| Privacy practices | Data usage | nothing collected; all three certifications apply |
+| Privacy practices | Privacy policy URL | `https://github.com/mei28/parallax/blob/main/PRIVACY.md` |
+| Distribution | Visibility / Regions | Public / all |
