@@ -57,7 +57,18 @@ export async function openPane(
   signal: AbortSignal,
 ): Promise<Document> {
   await whenLoaded(frame, signal);
+  return adoptPane(frame, expectedUrl);
+}
 
+/**
+ * Check and prepare a pane that has already finished loading.
+ *
+ * Split out because following a link arrives here without having waited: the load is what
+ * announced the navigation in the first place.
+ *
+ * @throws ParallaxError FRAME_BLOCKED or FRAME_BUSTED.
+ */
+export function adoptPane(frame: HTMLIFrameElement, expectedUrl: string): Document {
   let doc: Document | null = null;
   try {
     doc = frame.contentDocument;

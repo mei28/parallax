@@ -1,4 +1,10 @@
 {
+  "prompt_translate_page": {
+    "message": "This page has not been translated yet."
+  },
+  "action_retranslate": {
+    "message": "Translate again"
+  },
   "extDescription": {
     "message": "Read a page and its translation side by side, in the same tab.",
     "description": "Extension description shown in the Chrome Web Store and on chrome://extensions"

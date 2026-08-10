@@ -7,8 +7,10 @@
 import { renderMessage } from "../chrome/i18n.ts";
 import { describeFailure, ParallaxError } from "../shared/errors.ts";
 import type { LanguagePair, PaneId, Preferences } from "../shared/types.ts";
-import { openPane } from "./frames.ts";
+import { adoptPane, openPane } from "./frames.ts";
 import { diagnoseFraming, releaseFramingOverride, requestFramingOverride } from "./framing.ts";
+import type { NavigationFollower } from "./navigation.ts";
+import { createNavigationFollower, paneFrame, watchInPageNavigation } from "./navigation.ts";
 import type { Overlay } from "./overlay.ts";
 import { createOverlay } from "./overlay.ts";
 import { pairDocuments } from "./pairing.ts";
@@ -43,6 +45,14 @@ export interface Controller {
    */
   isActive(): boolean;
   toggleOrientation(): void;
+  /**
+   * Read both panes wherever they now are, and do the page over.
+   *
+   * The same work following a link triggers, reachable by hand — which is what makes it a
+   * way out when a navigation goes unnoticed, as well as useful on its own: pages change
+   * under a translation, and a translation can stop at a failure.
+   */
+  retranslate(): void;
   destroy(): void;
 }
 
@@ -122,20 +132,24 @@ export interface ControllerDeps {
   checkAvailability: typeof checkAvailability;
   createTranslator: typeof createTranslator;
   openPane: typeof openPane;
+  adoptPane: typeof adoptPane;
   requestFramingOverride: typeof requestFramingOverride;
   diagnoseFraming: typeof diagnoseFraming;
   releaseFramingOverride: typeof releaseFramingOverride;
   createOverlay: typeof createOverlay;
+  paneFrame: typeof paneFrame;
 }
 
 const REAL_DEPS: ControllerDeps = {
   checkAvailability,
   createTranslator,
   openPane,
+  adoptPane,
   requestFramingOverride,
   diagnoseFraming,
   releaseFramingOverride,
   createOverlay,
+  paneFrame,
 };
 
 export async function startSplit(
@@ -163,6 +177,7 @@ export async function startSplit(
   overlay.setOrientation(preferences.orientation);
 
   let queue: Queue | null = null;
+  let scrollSync: ScrollSync | null = null;
   let translator: TranslatorSession | null = null;
   let orientation = preferences.orientation;
   // Two separate questions. `splitting` is whether the reader is still comparing two panes;
@@ -173,6 +188,8 @@ export async function startSplit(
 
   const controller: Controller = {
     isActive: () => open && splitting,
+
+    retranslate: () => retranslate(),
 
     toggleOrientation() {
       orientation = orientation === "horizontal" ? "vertical" : "horizontal";
@@ -197,6 +214,43 @@ export async function startSplit(
   };
 
   overlay.onRequestClose(() => controller.destroy());
+
+  /**
+   * Re-read both panes wherever they now are, and do the page over.
+   *
+   * The same work a followed link triggers, reachable by hand. That makes it a recovery for
+   * a navigation that went unnoticed as well as a feature in its own right: pages change
+   * under a translation, and a translation can stop at a failure.
+   */
+  function retranslate(): void {
+    const at = deps.paneFrame(overlay.frames.target).currentUrl();
+    if (at === null) {
+      overlay.showCard(renderMessage(describeFailure({ code: "FRAME_BLOCKED_UNKNOWN" })));
+      return;
+    }
+    try {
+      preparePage(
+        deps.adoptPane(overlay.frames.source, at),
+        deps.adoptPane(overlay.frames.target, at),
+      );
+    } catch (error) {
+      reportBlocking(overlay, error);
+      return;
+    }
+    if (translator === null) {
+      // No session yet, because the reader had not accepted the language-pack download.
+      // This click is the user activation create() wants, so it can be asked for now.
+      runAndReport();
+    }
+  }
+
+  /** The same panel the first translation is offered in, reached by following a link. */
+  function offerRetranslate(): void {
+    overlay.showCard(renderMessage({ key: "prompt_translate_page", substitutions: [] }), {
+      label: renderMessage({ key: "action_retranslate", substitutions: [] }),
+      onClick: retranslate,
+    });
+  }
 
   createResizer({
     container: overlay.container,
@@ -322,13 +376,21 @@ export async function startSplit(
     }
 
     overlay.hideCard();
+    startTranslating();
+  };
+
+  /** @returns whether there was anything to translate. */
+  function startTranslating(): boolean {
+    const session = translator;
+    if (session === null) {
+      return false;
+    }
     const { blocks, targets } = groupByBlock(targetDoc, collectTextNodes(targetDoc.body));
     if (targets.length === 0) {
       overlay.setStatus("ready", "Nothing on this page needs translating.");
-      return;
+      return true;
     }
 
-    const session = translator;
     queue = createQueue({
       translate: (text) => session.translate(text),
       onProgress(done, total) {
@@ -346,33 +408,66 @@ export async function startSplit(
           renderMessage(describeFailure({ code: "TRANSLATE_FAILED", detail: failure })),
         );
       },
-      signal: abort.signal,
+      signal: pageAbort.signal,
     });
 
     // openPane() has already proved this frame is same-origin and readable.
     const frameWindow = overlay.frames.target.contentWindow as Window & typeof globalThis;
-    observeViewport(frameWindow, blocks, queue, abort.signal);
+    observeViewport(frameWindow, blocks, queue, pageAbort.signal);
     queue.enqueue(targets);
-  };
+    return true;
+  }
 
-  // Pairing runs before any translation, while the two documents are still identical. It is
-  // both the check that they are, and the source of the ids the panes align on. Failing it
-  // costs only the scroll sync — the split itself is unaffected — so it is reported in the
-  // toolbar rather than as a card over the panes.
-  let scrollSync: ScrollSync | null = null;
-  try {
-    const index = pairDocuments(sourceDoc.body, targetDoc.body);
-    scrollSync = createScrollSync({
-      documents: { source: sourceDoc, target: targetDoc },
-      index,
-      signal: abort.signal,
-    });
-  } catch (error) {
-    if (error instanceof ParallaxError) {
-      overlay.setStatus("error", renderMessage(describeFailure(error.failure)));
-    } else {
-      throw error;
+  // Everything below is per page, not per split. Following a link replaces both documents,
+  // so the pairing, the scroll sync and the translation queue are all rebuilt — while the
+  // overlay, the resizer and, importantly, the translator session survive. Reusing the
+  // session is what makes the next page start translating at once instead of paying for
+  // create() and a possible language-pack download again.
+  let pageAbort = new AbortController();
+  let follower: NavigationFollower | null = null;
+
+  /** @returns whether translation started, so the caller can offer it if not. */
+  function preparePage(source: Document, target: Document): boolean {
+    pageAbort.abort();
+    pageAbort = new AbortController();
+    queue?.destroy();
+    queue = null;
+    scrollSync = null;
+
+    // Pairing runs before any translation, while the two documents still hold the same
+    // words. Failing it costs only the scroll sync — the split itself is unaffected — so it
+    // is reported in the toolbar rather than as a card over the panes.
+    try {
+      const index = pairDocuments(source.body, target.body);
+      scrollSync = createScrollSync({
+        documents: { source, target },
+        index,
+        signal: pageAbort.signal,
+      });
+    } catch (error) {
+      if (error instanceof ParallaxError) {
+        overlay.setStatus("error", renderMessage(describeFailure(error.failure)));
+      } else {
+        throw error;
+      }
     }
+
+    // Re-attached per page: a single-page app routes with pushState and never reloads the
+    // frame, so its element's load event says nothing. The Navigation object belongs to the
+    // document, so it goes with the page it was read from.
+    for (const pane of ["source", "target"] as const) {
+      const view = (pane === "source" ? source : target).defaultView;
+      if (view !== null) {
+        watchInPageNavigation(view, () => follower?.check(pane), pageAbort.signal);
+      }
+    }
+
+    targetDoc = target;
+    if (translator === null) {
+      return false;
+    }
+    overlay.hideCard();
+    return startTranslating();
   }
 
   // Never `void run()`. Anything thrown past the translator's own catch — a frame that went
@@ -395,6 +490,37 @@ export async function startSplit(
       );
     });
   };
+
+  preparePage(sourceDoc, targetDoc);
+
+  follower = createNavigationFollower({
+    frames: {
+      source: deps.paneFrame(overlay.frames.source),
+      target: deps.paneFrame(overlay.frames.target),
+    },
+    origin: new URL(doc.location.href).origin,
+    startedAt: doc.location.href,
+    onNavigated(url) {
+      // Offered first, and withdrawn by preparePage the moment translation starts. When it
+      // starts the panel never paints; when it does not, the reader is left holding the way
+      // to ask for it rather than a page silently in its own language.
+      offerRetranslate();
+      try {
+        preparePage(
+          deps.adoptPane(overlay.frames.source, url),
+          deps.adoptPane(overlay.frames.target, url),
+        );
+      } catch (error) {
+        reportBlocking(overlay, error);
+      }
+    },
+    onLeftOrigin() {
+      // Following a link off the site is not a failure to report, it is the reader leaving.
+      // Closing puts them back on the page they started from, at the offset they left it.
+      controller.destroy();
+    },
+    signal: abort.signal,
+  });
 
   if (availability === "available") {
     runAndReport();

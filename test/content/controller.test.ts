@@ -9,6 +9,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ControllerDeps, ControllerHooks } from "../../src/content/controller.ts";
 import { startSplit } from "../../src/content/controller.ts";
+import type { PaneFrame } from "../../src/content/navigation.ts";
 import type { Overlay } from "../../src/content/overlay.ts";
 import { DEFAULT_PREFERENCES } from "../../src/shared/constants.ts";
 import { ParallaxError } from "../../src/shared/errors.ts";
@@ -29,11 +30,18 @@ function fakeOverlay() {
   const frame = () => {
     const iframe = document.createElement("iframe");
     document.body.append(iframe);
+    // The viewport observer is built in the pane's own realm, and jsdom gives each iframe a
+    // realm without one. Chrome gives every realm an IntersectionObserver.
+    const view = iframe.contentWindow as (Window & { IntersectionObserver?: unknown }) | null;
+    if (view !== null && view.IntersectionObserver === undefined) {
+      view.IntersectionObserver = window.IntersectionObserver;
+    }
     return iframe;
   };
   let closeHandler: (() => void) | null = null;
+  let cardAction: (() => void) | null = null;
 
-  const overlay: Overlay & { calls: string[]; requestClose(): void } = {
+  const overlay: Overlay & { calls: string[]; requestClose(): void; retranslate(): void } = {
     container,
     handle,
     panes: { source: document.createElement("div"), target: document.createElement("div") },
@@ -45,13 +53,18 @@ function fakeOverlay() {
     setCollapsing: vi.fn(),
     setStatus: vi.fn(),
     setProgress: vi.fn(),
-    showCard: vi.fn((text: string) => void overlay.calls.push(`card:${text}`)),
+    showCard: vi.fn((text: string, action?: { onClick: () => void }) => {
+      overlay.calls.push(`card:${text}`);
+      cardAction = action?.onClick ?? null;
+    }),
     hideCard: vi.fn(),
     onRequestClose: (handler) => {
       closeHandler = handler;
     },
     destroy: vi.fn(() => void overlay.calls.push("destroy")),
     requestClose: () => closeHandler?.(),
+    // Press the button the panel offers, whatever it is offering.
+    retranslate: () => cardAction?.(),
   };
   return overlay;
 }
@@ -70,10 +83,16 @@ function deps(overrides: Partial<ControllerDeps> = {}): ControllerDeps {
     checkAvailability: async () => "available",
     createTranslator: async () => ({ translate: async (t: string) => `[${t}]`, destroy: vi.fn() }),
     openPane: async () => paneDocument(),
+    adoptPane: () => paneDocument(),
     requestFramingOverride: async () => ({ kind: "no-permission" }),
     diagnoseFraming: async () => null,
     releaseFramingOverride: async () => {},
     createOverlay: () => overlay,
+    paneFrame: (frame: HTMLIFrameElement): PaneFrame => ({
+      currentUrl: () => frame.src,
+      navigate: () => {},
+      onLoad: () => {},
+    }),
     ...overrides,
   };
 }
@@ -271,6 +290,124 @@ describe("a site that refuses to be embedded", () => {
     } as ControllerDeps);
 
     expect(createTranslator).not.toHaveBeenCalled();
+  });
+});
+
+// Following a link is the difference between a reading session and a single page.
+//
+// Driven through fake panes: a jsdom iframe never leaves about:blank, so a test that just
+// dispatches load events at real ones proves nothing — an earlier version of this suite did
+// exactly that and passed while the feature did nothing.
+describe("following a link", () => {
+  function fakePane(url: string) {
+    const handlers: (() => void)[] = [];
+    return {
+      visited: [] as string[],
+      currentUrl: () => url,
+      navigate(to: string) {
+        this.visited.push(to);
+        url = to;
+        for (const handler of [...handlers]) handler();
+      },
+      onLoad: (handler: () => void) => handlers.push(handler),
+      /** The reader clicking a link in this pane. */
+      go(to: string) {
+        url = to;
+        for (const handler of [...handlers]) handler();
+      },
+    };
+  }
+
+  const HOME = window.location.href;
+  const NEXT = new URL("/next", window.location.href).href;
+
+  function navigableDeps(overrides: Partial<ControllerDeps> = {}) {
+    const panes = { source: fakePane(HOME), target: fakePane(HOME) };
+    return {
+      panes,
+      deps: deps({
+        paneFrame: ((frame: HTMLIFrameElement) =>
+          frame === overlay.frames.source ? panes.source : panes.target) as never,
+        ...overrides,
+      }),
+    };
+  }
+
+  it("translates the page it followed to", async () => {
+    const translate = vi.fn(async (text: string) => `[${text}]`);
+    const { panes, deps: d } = navigableDeps({
+      createTranslator: async () => ({ translate, destroy: vi.fn() }),
+    });
+    await startSplit(document, DEFAULT_PREFERENCES, hooks, d);
+    await new Promise((resolve) => setTimeout(resolve));
+    translate.mockClear();
+
+    panes.source.go(NEXT);
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(panes.target.visited).toEqual([NEXT]);
+    expect(translate).toHaveBeenCalled();
+  });
+
+  it("keeps the translator session, so the next page needs no download", async () => {
+    const createTranslator = vi.fn(async () => ({
+      translate: async (t: string) => `[${t}]`,
+      destroy: vi.fn(),
+    }));
+    const { panes, deps: d } = navigableDeps({ createTranslator });
+    await startSplit(document, DEFAULT_PREFERENCES, hooks, d);
+    await new Promise((resolve) => setTimeout(resolve));
+
+    panes.source.go(NEXT);
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(createTranslator).toHaveBeenCalledOnce();
+  });
+
+  it("takes its offer back once the new page starts translating", async () => {
+    const { panes, deps: d } = navigableDeps();
+    await startSplit(document, DEFAULT_PREFERENCES, hooks, d);
+    await new Promise((resolve) => setTimeout(resolve));
+
+    panes.source.go(NEXT);
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(overlay.hideCard).toHaveBeenCalled();
+  });
+
+  // The way out when a navigation is not noticed. Offered in the same panel the first
+  // translation is, rather than as a control the reader has to hunt for.
+  it("leaves the offer up, and honours it, when nothing translated by itself", async () => {
+    const translate = vi.fn(async (text: string) => `[${text}]`);
+    const { panes, deps: d } = navigableDeps({
+      // No translator yet: the reader has not accepted the language-pack download.
+      checkAvailability: async () => "downloadable",
+      createTranslator: async () => ({ translate, destroy: vi.fn() }),
+    });
+    await startSplit(document, DEFAULT_PREFERENCES, hooks, d);
+    await new Promise((resolve) => setTimeout(resolve));
+
+    panes.source.go(NEXT);
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(overlay.calls.at(-1)).toContain("prompt_translate_page");
+
+    overlay.retranslate();
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(translate).toHaveBeenCalled();
+  });
+
+  it("closes the split at a link leading off the site", async () => {
+    const { panes, deps: d } = navigableDeps();
+    await startSplit(document, DEFAULT_PREFERENCES, hooks, d);
+    await new Promise((resolve) => setTimeout(resolve));
+
+    panes.source.go("https://elsewhere.test/page");
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(panes.target.visited).toEqual([]);
+    // Reading another site is an ordinary thing to want; the reader gets their tab back.
+    expect(overlay.destroy).toHaveBeenCalled();
   });
 });
 

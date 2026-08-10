@@ -25,6 +25,7 @@ const horizontalRadio = required<HTMLInputElement>("horizontal");
 const verticalRadio = required<HTMLInputElement>("vertical");
 const toggleButton = required<HTMLButtonElement>("toggle");
 const errorLine = required<HTMLParagraphElement>("error");
+const retranslateButton = required<HTMLButtonElement>("retranslate");
 const overrideBox = required<HTMLDivElement>("override");
 const overrideText = required<HTMLParagraphElement>("override-text");
 const allowButton = required<HTMLButtonElement>("allow");
@@ -81,6 +82,16 @@ async function main(): Promise<void> {
       ? recorded
       : undefined;
   toggleButton.textContent = active ? "Stop split" : "Split this page";
+  // Only meaningful while a split is up, and the way to translate a page reached by
+  // following a link from the one the split started on.
+  retranslateButton.hidden = !active;
+  retranslateButton.addEventListener("click", () => {
+    void sendToTab(tabId, { type: "RETRANSLATE" })
+      .then(() => window.close())
+      .catch((error: unknown) => {
+        errorLine.textContent = error instanceof Error ? error.message : String(error);
+      });
+  });
 
   const startSplit = async (): Promise<void> => {
     const current = await savePreferences({

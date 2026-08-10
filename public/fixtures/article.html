@@ -27,6 +27,16 @@
   <body>
     <h1>Notes on reading two texts at once</h1>
     <p class="byline">A fixture page. Every construct here exists to exercise one rule.</p>
+    <p><a href="second.html">Continue to the second page</a> — a plain link, which reloads the frame.</p>
+    <p><a href="second.html" id="spa">Continue without reloading</a> — pushState, which does not.</p>
+    <script>
+      document.getElementById("spa").addEventListener("click", (e) => {
+        e.preventDefault();
+        history.pushState({}, "", "second.html");
+        document.title = "Second page (pushState)";
+        document.querySelector("h1").textContent = "The second page, reached without a reload";
+      });
+    </script>
 
     <p>
       Reading a translation beside its original is an old habit. Scribes ruled two columns on a

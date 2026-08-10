@@ -74,6 +74,8 @@ describe("locale catalogues", () => {
     }
   });
 
+  // Not only failures: the panel's own wording lives here too, and chrome.i18n answers an
+  // unknown key with an empty string rather than complaining.
   it("keeps the locales in step, with no key present in only one", () => {
     expect(Object.keys(en).sort()).toEqual(Object.keys(ja).sort());
   });

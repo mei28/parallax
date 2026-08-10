@@ -1,4 +1,10 @@
 {
+  "prompt_translate_page": {
+    "message": "このページはまだ翻訳されていません。"
+  },
+  "action_retranslate": {
+    "message": "再翻訳"
+  },
   "extDescription": {
     "message": "同じタブの中で、原文と訳文を並べて読む。",
     "description": "Extension description shown in the Chrome Web Store and on chrome://extensions"

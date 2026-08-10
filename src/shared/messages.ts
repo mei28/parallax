@@ -7,6 +7,7 @@ export type Message =
   | { readonly type: "STOP_SPLIT" }
   | { readonly type: "TOGGLE_SPLIT"; readonly preferences: Preferences }
   | { readonly type: "TOGGLE_ORIENTATION" }
+  | { readonly type: "RETRANSLATE" }
   | { readonly type: "GET_STATE" };
 
 /**

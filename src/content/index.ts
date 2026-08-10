@@ -86,6 +86,11 @@ if (window.__parallaxInstalled !== true) {
           return true; // respond() is called asynchronously
         }
 
+        case "RETRANSLATE":
+          controller?.retranslate();
+          respond({ active: isActive() });
+          return false;
+
         case "TOGGLE_ORIENTATION":
           controller?.toggleOrientation();
           respond({ active: isActive() });
