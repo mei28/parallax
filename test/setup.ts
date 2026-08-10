@@ -41,3 +41,16 @@ const chromeMock = {
 };
 
 Object.defineProperty(globalThis, "chrome", { value: chromeMock, writable: true });
+
+// jsdom has no top layer, so its <dialog> lacks showModal/close. Chrome 138+ — the only
+// browser parallax targets — implements both, and the overlay depends on the top layer to
+// sit above a site's own fixed elements. Stubbing the two methods keeps the overlay tests
+// about the overlay rather than about jsdom's gaps.
+if (typeof HTMLDialogElement !== "undefined" && !HTMLDialogElement.prototype.showModal) {
+  HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement): void {
+    this.setAttribute("open", "");
+  };
+  HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement): void {
+    this.removeAttribute("open");
+  };
+}

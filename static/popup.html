@@ -7,7 +7,24 @@
   </head>
   <body>
     <h1>parallax</h1>
-    <p id="placeholder">Scaffold only — the popup UI arrives in phase 1.</p>
+
+    <label class="field" for="source">From</label>
+    <select id="source"></select>
+
+    <label class="field" for="target">Into</label>
+    <select id="target"></select>
+
+    <fieldset class="segmented">
+      <legend class="field">Split</legend>
+      <input type="radio" name="orientation" id="horizontal" value="horizontal" checked />
+      <label for="horizontal">Left / Right</label>
+      <input type="radio" name="orientation" id="vertical" value="vertical" />
+      <label for="vertical">Top / Bottom</label>
+    </fieldset>
+
+    <button type="button" id="toggle" class="primary">Split this page</button>
+    <p id="error" role="alert"></p>
+
     <script src="popup.js"></script>
   </body>
 </html>

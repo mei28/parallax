@@ -1,0 +1,215 @@
+/* Styles for the split overlay. Loaded as a string by esbuild and injected into a closed
+   shadow root, so nothing here reaches the page and none of the page's rules reach here. */
+
+:host {
+  all: initial;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[data-parallax-dialog] {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: Canvas;
+  color: CanvasText;
+  color-scheme: light dark;
+  font:
+    13px / 1.5 system-ui,
+    sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-parallax-dialog]::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+
+/* ---- panes ------------------------------------------------------------- */
+
+[data-parallax-container] {
+  --parallax-ratio: 0.5;
+  --parallax-handle: 8px;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+}
+
+[data-parallax-container][data-parallax-orientation="horizontal"] {
+  grid-template-columns:
+    calc((100% - var(--parallax-handle)) * var(--parallax-ratio))
+    var(--parallax-handle)
+    1fr;
+  grid-template-rows: 100%;
+}
+
+[data-parallax-container][data-parallax-orientation="vertical"] {
+  grid-template-rows:
+    calc((100% - var(--parallax-handle)) * var(--parallax-ratio))
+    var(--parallax-handle)
+    1fr;
+  grid-template-columns: 100%;
+}
+
+/* Collapsing the source pane leaves the translation full width. Collapsing the target ends
+   the split entirely, so there is no mode for it here. */
+[data-parallax-container][data-parallax-mode="single-target"] {
+  grid-template-columns: 0 0 1fr;
+  grid-template-rows: 100%;
+}
+
+[data-parallax-pane] {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+  background: Canvas;
+}
+
+[data-parallax-container][data-parallax-mode="error"] [data-parallax-pane] {
+  visibility: hidden;
+}
+
+[data-parallax-pane] iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* ---- handle ------------------------------------------------------------ */
+
+[data-parallax-handle] {
+  background: color-mix(in srgb, CanvasText 22%, Canvas);
+  border: 0;
+  padding: 0;
+  touch-action: none;
+}
+
+[data-parallax-orientation="horizontal"] [data-parallax-handle] {
+  cursor: col-resize;
+}
+
+[data-parallax-orientation="vertical"] [data-parallax-handle] {
+  cursor: row-resize;
+}
+
+[data-parallax-handle]:focus-visible {
+  outline: 2px solid Highlight;
+  outline-offset: -2px;
+}
+
+/* While dragging, the iframes must not hit-test the pointer: each pane is a separate
+   document and would otherwise start selecting its own text mid-drag. */
+[data-parallax-container][data-parallax-dragging] iframe {
+  pointer-events: none;
+}
+
+[data-parallax-container][data-parallax-dragging] {
+  user-select: none;
+}
+
+/* The pane about to be removed, previewed during the drag so the gesture is reversible. */
+[data-parallax-pane][data-parallax-collapsing]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, Highlight 20%, transparent);
+  outline: 2px solid Highlight;
+  outline-offset: -2px;
+}
+
+/* ---- toolbar ----------------------------------------------------------- */
+
+[data-parallax-toolbar] {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-top: 1px solid color-mix(in srgb, CanvasText 20%, Canvas);
+  background: color-mix(in srgb, CanvasText 5%, Canvas);
+}
+
+[data-parallax-message] {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-parallax-toolbar][data-parallax-status="error"] [data-parallax-message] {
+  color: color-mix(in srgb, red 65%, CanvasText);
+}
+
+[data-parallax-toolbar] button {
+  font: inherit;
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, CanvasText 30%, Canvas);
+  border-radius: 5px;
+  background: Canvas;
+  color: CanvasText;
+  cursor: pointer;
+}
+
+[data-parallax-toolbar] button:hover {
+  background: color-mix(in srgb, CanvasText 8%, Canvas);
+}
+
+/* Download progress, driven by --parallax-progress (0..1). */
+[data-parallax-progress] {
+  --parallax-progress: 0;
+  flex: 0 0 90px;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, CanvasText 18%, Canvas);
+  overflow: hidden;
+}
+
+[data-parallax-progress]::after {
+  content: "";
+  display: block;
+  height: 100%;
+  width: calc(var(--parallax-progress) * 100%);
+  background: Highlight;
+  transition: width 120ms linear;
+}
+
+[data-parallax-toolbar]:not([data-parallax-status="downloading"]) [data-parallax-progress] {
+  display: none;
+}
+
+/* ---- blocking card ----------------------------------------------------- */
+
+[data-parallax-card] {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 32px;
+  text-align: center;
+  background: Canvas;
+}
+
+[data-parallax-card][hidden] {
+  display: none;
+}
+
+[data-parallax-card] p {
+  margin: 0;
+  max-width: 46ch;
+  font-size: 14px;
+  line-height: 1.6;
+}

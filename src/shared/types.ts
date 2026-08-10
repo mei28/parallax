@@ -7,6 +7,15 @@ export type Orientation = "horizontal" | "vertical";
 export type PaneId = "source" | "target";
 
 /**
+ * `single-target` is what collapsing the source pane leaves behind. There is no
+ * `single-source`: collapsing the translated pane ends the split, because the original is
+ * already underneath with its state intact, whereas the translation exists nowhere else.
+ */
+export type SplitMode = "split" | "single-target" | "error";
+
+export type ToolbarStatus = "idle" | "downloading" | "translating" | "ready" | "error";
+
+/**
  * A message named rather than written out: the chrome.i18n catalogue key, plus the values
  * to substitute into it. Pure code produces these; src/chrome/i18n.ts turns them into text.
  */

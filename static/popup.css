@@ -4,21 +4,112 @@
 }
 
 body {
-  width: 260px;
+  width: 268px;
   margin: 0;
-  padding: 12px 14px;
+  padding: 12px 14px 14px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 10px;
+  align-items: center;
+}
+
+h1,
+.segmented,
+.primary,
+#error {
+  grid-column: 1 / -1;
 }
 
 h1 {
-  margin: 0 0 8px;
+  margin: 0 0 2px;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 
-p {
-  margin: 0;
+.field {
   font-size: 12px;
-  line-height: 1.5;
   opacity: 0.75;
+}
+
+select,
+button {
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 6px;
+  border: 1px solid color-mix(in srgb, CanvasText 30%, Canvas);
+  border-radius: 6px;
+  background: Canvas;
+  color: CanvasText;
+}
+
+select {
+  width: 100%;
+}
+
+/* Real radios, visually a segmented control: keyboard and screen-reader behaviour come for
+   free, and the checked state is CSS rather than a class the script has to keep in step. */
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.segmented legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 5px;
+  padding: 0;
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segmented label {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 12px;
+  text-align: center;
+  border: 1px solid color-mix(in srgb, CanvasText 30%, Canvas);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.segmented input:checked + label {
+  background: color-mix(in srgb, Highlight 22%, Canvas);
+  border-color: Highlight;
+}
+
+.segmented input:focus-visible + label {
+  outline: 2px solid Highlight;
+  outline-offset: 1px;
+}
+
+.primary {
+  margin-top: 4px;
+  padding: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+#error {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: color-mix(in srgb, red 60%, CanvasText);
+}
+
+#error:empty {
+  display: none;
 }
