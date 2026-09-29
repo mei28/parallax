@@ -1,5 +1,6 @@
 import type { FC } from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { Exit } from "../components/Exit";
 import { CYAN } from "../theme";
 
 const HEADLINE = ["Read a page and its", "translation, side by side"];
@@ -57,36 +58,38 @@ export const Title: FC = () => {
   const sub = spring({ frame: frame - (WORD_COUNT * STAGGER + 8), fps, config: { damping: 200 } });
 
   return (
-    <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
-      <div
-        style={{
-          fontSize: 108,
-          fontWeight: 660,
-          letterSpacing: "-0.025em",
-          lineHeight: 1.12,
-        }}
-      >
-        {LINES.map((line) => (
-          <div
-            key={line.text}
-            style={{ display: "flex", justifyContent: "center", columnGap: "0.26em" }}
-          >
-            {line.words.map((word) => (
-              <RisingWord key={word.order} word={word} />
-            ))}
-          </div>
-        ))}
-      </div>
-      <div
-        style={{
-          marginTop: 40,
-          fontSize: 36,
-          opacity: 0.72 * sub,
-          transform: `translateY(${interpolate(sub, [0, 1], [20, 0])}px)`,
-        }}
-      >
-        {SUB}
-      </div>
-    </AbsoluteFill>
+    <Exit>
+      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
+        <div
+          style={{
+            fontSize: 108,
+            fontWeight: 660,
+            letterSpacing: "-0.025em",
+            lineHeight: 1.12,
+          }}
+        >
+          {LINES.map((line) => (
+            <div
+              key={line.text}
+              style={{ display: "flex", justifyContent: "center", columnGap: "0.26em" }}
+            >
+              {line.words.map((word) => (
+                <RisingWord key={word.order} word={word} />
+              ))}
+            </div>
+          ))}
+        </div>
+        <div
+          style={{
+            marginTop: 40,
+            fontSize: 36,
+            opacity: 0.72 * sub,
+            transform: `translateY(${interpolate(sub, [0, 1], [20, 0])}px)`,
+          }}
+        >
+          {SUB}
+        </div>
+      </AbsoluteFill>
+    </Exit>
   );
 };

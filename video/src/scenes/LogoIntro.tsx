@@ -1,6 +1,7 @@
 import { measureText } from "@remotion/layout-utils";
 import type { FC } from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { Exit } from "../components/Exit";
 import { Mark } from "../components/Mark";
 import { FONT } from "../theme";
 
@@ -34,35 +35,37 @@ export const LogoIntro: FC = () => {
   const open = spring({ frame: frame - 34, fps, config: { damping: 200 } });
 
   return (
-    <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <div
-          style={{
-            opacity: arrive,
-            transform: `translateY(${interpolate(arrive, [0, 1], [60, 0])}px)`,
-          }}
-        >
-          <Mark size={MARK_SIZE} drop={drop} />
-        </div>
-        <div
-          style={{
-            width: open * (GAP + NAME_WIDTH),
-            overflow: "hidden",
-            whiteSpace: "nowrap",
-          }}
-        >
+    <Exit>
+      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
           <div
             style={{
-              ...NAME,
-              paddingLeft: GAP,
-              opacity: open,
-              transform: `translateX(${interpolate(open, [0, 1], [-24, 0])}px)`,
+              opacity: arrive,
+              transform: `translateY(${interpolate(arrive, [0, 1], [60, 0])}px)`,
             }}
           >
-            {NAME.text}
+            <Mark size={MARK_SIZE} drop={drop} />
+          </div>
+          <div
+            style={{
+              width: open * (GAP + NAME_WIDTH),
+              overflow: "hidden",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <div
+              style={{
+                ...NAME,
+                paddingLeft: GAP,
+                opacity: open,
+                transform: `translateX(${interpolate(open, [0, 1], [-24, 0])}px)`,
+              }}
+            >
+              {NAME.text}
+            </div>
           </div>
         </div>
-      </div>
-    </AbsoluteFill>
+      </AbsoluteFill>
+    </Exit>
   );
 };
