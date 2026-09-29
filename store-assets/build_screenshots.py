@@ -109,7 +109,9 @@ STYLE = f"""
   .pane h3.t {{ font-size: 14.5px; margin: 18px 0 8px; }}
   .pane p {{ font-size: 12.5px; line-height: 1.75; margin: 0 0 10px; color: #3c3c46; }}
 
-  .handle {{ background: #e2e2e6; position: relative; }}
+  /* Above the panes: the grip is wider than the handle, and the pane after it would
+     otherwise paint over the half that overhangs. */
+  .handle {{ background: #e2e2e6; position: relative; z-index: 1; }}
   .grip {{
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: 12px; height: 24px; border-radius: 3px; background: #fff;
