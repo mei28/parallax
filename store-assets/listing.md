@@ -189,6 +189,7 @@ All drawn by `just screenshots`, into `store-assets/screenshots/`.
 | Screenshots | 1280×800 | `store-assets/screenshots/parallax-1-hero` … `-5-private` |
 | Small promo tile | 440×280 | `store-assets/screenshots/parallax-promo-440x280` |
 | Store icon | 128×128 | `static/icons/icon-128.png` — uploaded to the listing, separately from the copy inside the package |
+| Promo video | 1920×1080, 36 s | `video/out/Promo.mp4`, from `just video-render Promo`. The listing takes a YouTube URL, not a file, so it goes up to YouTube first |
 
 ## Where each field goes
 
@@ -199,6 +200,7 @@ All drawn by `just screenshots`, into `store-assets/screenshots/`.
 | Store listing | Description | Detailed description |
 | Store listing | Category / Language | Productivity / English |
 | Store listing | Graphic assets | the table above |
+| Store listing | Global promo video | the YouTube URL of the promo video |
 | Store listing | Homepage URL | `https://github.com/mei28/parallax` |
 | Store listing | Support URL | `https://github.com/mei28/parallax/issues` |
 | Privacy practices | Single purpose | see below |

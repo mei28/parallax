@@ -1,9 +1,10 @@
 import type { FC } from "react";
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { BrowserWindow } from "../components/BrowserWindow";
+import type { Caption } from "../components/CaptionHeader";
 import { Pane, type Translation } from "../components/Pane";
 import { SplitPanes } from "../components/SplitPanes";
-import { type Caption, Stage } from "../components/Stage";
+import { Stage } from "../components/Stage";
 
 const CAPTION: Caption = {
   title: "Split the page, translate one side",

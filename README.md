@@ -70,6 +70,10 @@ just watch          # rebuild on change
 just check          # biome + tsc --noEmit + vitest   (the gate before any commit)
 just serve          # fixture pages on localhost:3000
 just package        # parallax.zip for the Chrome Web Store
+
+(cd video && pnpm install)   # once: the promo video has its own dependencies
+just video-studio            # edit it in Remotion Studio
+just video-render Promo      # video/out/Promo.mp4
 ```
 
 Load `dist/` at `chrome://extensions` with developer mode on.
@@ -83,6 +87,7 @@ Load `dist/` at `chrome://extensions` with developer mode on.
 | `src/chrome/` | Thin adapters over `chrome.*`, which is what lets `src/shared/` stay pure |
 | `src/background/` | The service worker: keyboard commands and the framing override |
 | `test/` | Mirrors `src/`. jsdom is opted into per file |
+| `video/` | The store promo video, drawn with Remotion. Its scroll sync imports the anchor math from `src/shared/` rather than copying it |
 
 Two invariants hold the design up. Translation only ever assigns `Text.data` — never inserts,
 removes or reparents an element — which is what keeps the two panes alignable as it runs. And

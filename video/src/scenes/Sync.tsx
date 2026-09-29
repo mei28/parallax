@@ -1,10 +1,11 @@
 import type { FC } from "react";
 import { Easing, interpolate, useCurrentFrame } from "remotion";
 import { BrowserWindow } from "../components/BrowserWindow";
+import type { Caption } from "../components/CaptionHeader";
 import { Pane } from "../components/Pane";
 import { ReadingLine } from "../components/ReadingLine";
 import { SplitPanes } from "../components/SplitPanes";
-import { type Caption, Stage } from "../components/Stage";
+import { Stage } from "../components/Stage";
 import { usePaneLayouts } from "../components/usePaneLayouts";
 import { scrollsFor } from "../sync";
 

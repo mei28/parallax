@@ -3,6 +3,8 @@ import { Series } from "remotion";
 import { Backdrop } from "./components/Backdrop";
 import { Adjust } from "./scenes/Adjust";
 import { LogoIntro } from "./scenes/LogoIntro";
+import { Outro } from "./scenes/Outro";
+import { Private } from "./scenes/Private";
 import { Split } from "./scenes/Split";
 import { Sync } from "./scenes/Sync";
 import { Title } from "./scenes/Title";
@@ -15,6 +17,8 @@ const SCENES = [
   { name: "Split", Scene: Split, duration: seconds(7) },
   { name: "Sync", Scene: Sync, duration: seconds(7) },
   { name: "Adjust", Scene: Adjust, duration: seconds(6) },
+  { name: "Private", Scene: Private, duration: seconds(6) },
+  { name: "Outro", Scene: Outro, duration: seconds(4) },
 ];
 
 export const PROMO_DURATION = SCENES.reduce((total, scene) => total + scene.duration, 0);
