@@ -13,6 +13,7 @@ Writes store-assets/screenshots/. Run `just icons` first if the icon has changed
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -37,43 +38,11 @@ CYAN = "#22d3ee"  # the translation, and its right half
 ICON = b64encode((ROOT / "static" / "icons" / "icon-128.png").read_bytes()).decode()
 
 # Real sentences from the fixture and its translation. Invented copy in a picture about
-# translation would be the one thing a reader is entitled to disbelieve.
-EN = [
-    ("h", "Notes on reading two texts at once"),
-    ("p", "Reading a translation beside its original is an old habit. Scribes ruled two "
-          "columns on a single sheet so the eye could cross between them without losing "
-          "its place."),
-    ("h2", "What the panes must agree on"),
-    ("p", "A paragraph that runs four lines in English may run three in Japanese, or six. "
-          "Alignment has to be anchored to the content itself."),
-    ("p", "The order of the blocks, so an anchor in one pane names a block in the other. "
-          "The identity of each block, which survives translation only if nothing is "
-          "reparented. Nothing else: heights, line counts and wrapping are all free to "
-          "differ, and they do."),
-    ("h2", "Enough length to scroll"),
-    ("p", "When a reader moves down a column, the thing they are tracking is not a pixel "
-          "offset but a sentence. Restoring that sentence to the same height in the facing "
-          "column is the whole of the problem."),
-    ("p", "It is also why the anchor is taken a fifth of the way down the viewport rather "
-          "than at its very top: a block straddling the top edge is one the reader has "
-          "already finished with."),
-]
-JA = [
-    ("h", "二つのテキストを同時に読むこと"),
-    ("p", "原文の隣に翻訳を置いて読むのは古くからの習慣である。写字生は一枚の紙に二つの段を"
-          "引き、目が行を見失わずに行き来できるようにした。"),
-    ("h2", "二つのペインが一致すべきこと"),
-    ("p", "英語で四行の段落が、日本語では三行にも六行にもなる。位置合わせは内容そのものを"
-          "基準にするほかない。"),
-    ("p", "ブロックの順序。一方のペインの基準点が、もう一方のどのブロックを指すかが決まる"
-          "ため。各ブロックの同一性。これは要素の親子関係が変わらない限り翻訳後も保たれる。"
-          "それ以外は一致しなくてよい。高さも行数も折り返しも自由に違ってよいし、実際に違う。"),
-    ("h2", "スクロールできるだけの長さ"),
-    ("p", "読者が段を下っていくとき、追っているのはピクセル座標ではなく一つの文である。"
-          "その文を向かいの段の同じ高さに置き直すこと、それがこの問題のすべてである。"),
-    ("p", "基準線をビューポートの最上部ではなく五分の一の位置に取るのもそのためだ。"
-          "上端にかかっているブロックは、読者がすでに読み終えたものだから。"),
-]
+# translation would be the one thing a reader is entitled to disbelieve. Kept in a file of
+# their own because the promo video in video/ shows the same article.
+ARTICLE = json.loads((ROOT / "store-assets" / "article.json").read_text(encoding="utf-8"))
+EN = [(block["kind"], block["en"]) for block in ARTICLE]
+JA = [(block["kind"], block["ja"]) for block in ARTICLE]
 
 STYLE = f"""
   *, *::before, *::after {{ box-sizing: border-box; }}
@@ -186,9 +155,9 @@ def prose(lines: list[tuple[str, str]], anchor: str | None = None) -> str:
     """Render the fixture's blocks. `anchor` marks the heading the alignment rule is drawn on."""
     out = []
     for kind, text in lines:
-        if kind == "h":
+        if kind == "title":
             out.append(f"<h2 class='t'>{text}</h2>")
-        elif kind == "h2":
+        elif kind == "heading":
             marked = anchor is not None and not any("anchored" in piece for piece in out)
             label = f" data-label=\"{anchor}\"" if marked and anchor else ""
             css = "t anchored" if marked else "t"
