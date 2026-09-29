@@ -51,6 +51,6 @@ export const BrowserWindow: FC<{ children: ReactNode }> = ({ children }) => (
         {ADDRESS}
       </div>
     </div>
-    <div style={{ flex: 1, minHeight: 0 }}>{children}</div>
+    <div style={{ position: "relative", flex: 1, minHeight: 0 }}>{children}</div>
   </div>
 );

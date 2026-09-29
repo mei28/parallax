@@ -1,5 +1,7 @@
-import type { CSSProperties, FC } from "react";
+import { type CSSProperties, type FC, useLayoutEffect, useRef } from "react";
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { ROOT_ANCHOR_ID } from "../../../src/shared/constants.ts";
+import type { AnchorSample } from "../../../src/shared/scroll.ts";
 import { ARTICLE, type Block, type BlockKind } from "../article";
 import { CYAN, INK } from "../theme";
 
@@ -35,39 +37,72 @@ const ageOf = (translation: Translation, index: number, frame: number): Age => {
   return age < 0 ? null : age;
 };
 
-/**
- * One block. Its text is swapped whole, the way the extension assigns Text.data, and then
- * lit up and brought into focus so the eye catches which block just turned.
- */
-const BlockView: FC<{ block: Block; age: Age }> = ({ block, age }) => {
-  const { fps } = useVideoConfig();
-  const style = KIND_STYLE[block.kind];
-  if (age === null) {
-    return <div style={style}>{block.en}</div>;
-  }
-  if (age === "done") {
-    return <div style={style}>{block.ja}</div>;
-  }
+/** How a pane is laid out, in the terms the extension's anchor math works in. */
+export type PaneLayout = {
+  /** Height of the visible part of the pane. */
+  viewport: number;
+  /** The furthest the page can scroll. */
+  maxScroll: number;
+  /** Where each block sits on the page, after the root anchor for the space above them. */
+  samples: AnchorSample[];
+};
+
+/** The block the reader is on, marked in both panes, and how strongly (0 to 1). */
+export type Mark = { id: number; strength: number };
+
+/** The bar beside the block being read. */
+const Marker: FC<{ strength: number }> = ({ strength }) => (
+  <div
+    style={{
+      position: "absolute",
+      left: -22,
+      top: 0,
+      bottom: 0,
+      width: 4.5,
+      borderRadius: 3,
+      background: CYAN,
+      opacity: strength,
+    }}
+  />
+);
+
+/** The light and focus of a block that has just turned. */
+const turningStyle = (age: number, fps: number): CSSProperties => {
   const focus = spring({ frame: age, fps, config: { damping: 200 }, durationInFrames: 10 });
   const glow = interpolate(age, [0, GLOW_FRAMES], [0.3, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   const light = `rgb(34 211 238 / ${glow})`;
+  return {
+    opacity: interpolate(focus, [0, 1], [0.3, 1]),
+    filter: `blur(${interpolate(focus, [0, 1], [4, 0])}px)`,
+    borderRadius: 6,
+    background: light,
+    // A spread shadow in the same colour lights a margin around the block without moving
+    // anything; padding would push the blocks below it down.
+    boxShadow: `0 0 0 9px ${light}`,
+  };
+};
+
+/**
+ * One block. Its text is swapped whole, the way the extension assigns Text.data, and then
+ * lit up and brought into focus so the eye catches which block just turned.
+ */
+const BlockView: FC<{ block: Block; age: Age; mark: number }> = ({ block, age, mark }) => {
+  const { fps } = useVideoConfig();
   return (
     <div
       style={{
-        ...style,
-        opacity: interpolate(focus, [0, 1], [0.3, 1]),
-        filter: `blur(${interpolate(focus, [0, 1], [4, 0])}px)`,
-        borderRadius: 6,
-        background: light,
-        // A spread shadow in the same colour lights a margin around the block without
-        // moving anything; padding would push the blocks below it down.
-        boxShadow: `0 0 0 9px ${light}`,
+        ...KIND_STYLE[block.kind],
+        position: "relative",
+        // Once settled, a turned block is styled exactly as a finished one, so a scene
+        // that starts from a finished translation picks up without a visible seam.
+        ...(typeof age === "number" && age < GLOW_FRAMES ? turningStyle(age, fps) : {}),
       }}
     >
-      {block.ja}
+      {mark > 0 ? <Marker strength={mark} /> : null}
+      {age === null ? block.en : block.ja}
     </div>
   );
 };
@@ -93,32 +128,99 @@ const Tag: FC<{ japanese: boolean }> = ({ japanese }) => (
   </div>
 );
 
+/** Reads the pane's layout off the DOM. Offsets, not client rects, so scaling is ignored. */
+const measure = (
+  viewport: HTMLElement | null,
+  page: HTMLElement | null,
+  column: HTMLElement | null,
+): PaneLayout => {
+  if (viewport === null || page === null || column === null) {
+    throw new Error("Pane was measured before it was mounted");
+  }
+  const blocks = Array.from(column.children, (child, id) => {
+    if (!(child instanceof HTMLElement)) {
+      throw new Error(`Pane block ${id} is not an HTML element`);
+    }
+    return { id, top: child.offsetTop, height: child.offsetHeight };
+  });
+  const first = blocks[0];
+  if (first === undefined) {
+    throw new Error("Pane has no blocks to anchor on");
+  }
+  return {
+    viewport: viewport.clientHeight,
+    maxScroll: page.offsetHeight - viewport.clientHeight,
+    samples: [{ id: ROOT_ANCHOR_ID, top: 0, height: first.top }, ...blocks],
+  };
+};
+
 type PaneProps = {
   translation: Translation;
   /** How much of the page has arrived in the pane, 0 to 1. */
   loaded: number;
+  /** How far down the page is scrolled, in pixels. */
+  scroll: number;
+  mark: Mark | null;
+  /** Receives the pane's layout once it is on screen, for a scene that scrolls by it. */
+  onLayout?: (layout: PaneLayout) => void;
 };
 
 /** One of the two panes, showing the whole article in whichever language each block is in. */
-export const Pane: FC<PaneProps> = ({ translation, loaded }) => {
+export const Pane: FC<PaneProps> = ({ translation, loaded, scroll, mark, onLayout }) => {
   const frame = useCurrentFrame();
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const columnRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    const page = pageRef.current;
+    if (onLayout === undefined || viewport === null || page === null) {
+      return;
+    }
+    const report = () => onLayout(measure(viewport, page, columnRef.current));
+    report();
+    // The frame is not always at its full size when the scene mounts, so measure again
+    // whenever the pane or its page is resized.
+    const observer = new ResizeObserver(report);
+    observer.observe(viewport);
+    observer.observe(page);
+    return () => observer.disconnect();
+  }, [onLayout]);
+
   const blocks = ARTICLE.map((block, i) => ({ block, age: ageOf(translation, i, frame) }));
   const japanese = blocks.some(({ age }) => age !== null);
   return (
+    // The viewport stays put and carries the badge; the page inside it, padding included, is
+    // what moves when the pane scrolls.
     <div
+      ref={viewportRef}
       style={{
         position: "relative",
         overflow: "hidden",
-        padding: "39px 48px",
         background: japanese ? "#fafaff" : "#fff",
       }}
     >
-      <Tag japanese={japanese} />
-      <div style={{ maxWidth: COLUMN, margin: "0 auto", opacity: loaded }}>
-        {blocks.map(({ block, age }) => (
-          <BlockView key={block.en} block={block} age={age} />
-        ))}
+      <div
+        ref={pageRef}
+        style={{
+          position: "relative",
+          padding: "39px 48px",
+          transform: `translateY(${-scroll}px)`,
+        }}
+      >
+        <div ref={columnRef} style={{ maxWidth: COLUMN, margin: "0 auto", opacity: loaded }}>
+          {blocks.map(({ block, age }, i) => (
+            <BlockView
+              key={block.en}
+              block={block}
+              age={age}
+              mark={mark?.id === i ? mark.strength : 0}
+            />
+          ))}
+        </div>
       </div>
+      {/* After the page, so text scrolling past the corner goes under the badge. */}
+      <Tag japanese={japanese} />
     </div>
   );
 };

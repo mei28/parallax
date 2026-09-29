@@ -36,13 +36,13 @@ export const Split: FC = () => {
     extrapolateRight: "clamp",
   });
   return (
-    <Stage caption={CAPTION}>
+    <Stage caption={CAPTION} windowEnters>
       <BrowserWindow>
         <SplitPanes
           ratio={0.5}
           open={open}
-          original={<Pane translation="none" loaded={1} />}
-          translation={<Pane translation={TRANSLATION} loaded={loaded} />}
+          original={<Pane translation="none" loaded={1} scroll={0} mark={null} />}
+          translation={<Pane translation={TRANSLATION} loaded={loaded} scroll={0} mark={null} />}
         />
       </BrowserWindow>
     </Stage>

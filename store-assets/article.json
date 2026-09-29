@@ -2,41 +2,61 @@
   {
     "kind": "title",
     "en": "Notes on reading two texts at once",
-    "ja": "二つのテキストを同時に読むこと"
+    "ja": "一度に 2 つのテキストを読むときの注意事項"
   },
   {
     "kind": "paragraph",
     "en": "Reading a translation beside its original is an old habit. Scribes ruled two columns on a single sheet so the eye could cross between them without losing its place.",
-    "ja": "原文の隣に翻訳を置いて読むのは古くからの習慣である。写字生は一枚の紙に二つの段を引き、目が行を見失わずに行き来できるようにした。"
+    "ja": "原文の横に翻訳を読むのは、昔からの習慣です。 Scribes は 1 枚のシートに 2 つの柱を張って、目がその場所を失うことなくそれらの間を横切ることができるようにしました。"
   },
   {
     "kind": "heading",
     "en": "What the panes must agree on",
-    "ja": "二つのペインが一致すべきこと"
+    "ja": "ペインが同意しなければならないこと"
   },
   {
     "kind": "paragraph",
     "en": "A paragraph that runs four lines in English may run three in Japanese, or six. Alignment has to be anchored to the content itself.",
-    "ja": "英語で四行の段落が、日本語では三行にも六行にもなる。位置合わせは内容そのものを基準にするほかない。"
+    "ja": "英語で 4 行を実行する段落は、日本語で 3 行、または 6 行を実行できます。 整列は、コンテンツ自体に固定する必要があります。"
   },
   {
     "kind": "paragraph",
     "en": "The order of the blocks, so an anchor in one pane names a block in the other. The identity of each block, which survives translation only if nothing is reparented. Nothing else: heights, line counts and wrapping are all free to differ, and they do.",
-    "ja": "ブロックの順序。一方のペインの基準点が、もう一方のどのブロックを指すかが決まるため。各ブロックの同一性。これは要素の親子関係が変わらない限り翻訳後も保たれる。それ以外は一致しなくてよい。高さも行数も折り返しも自由に違ってよいし、実際に違う。"
+    "ja": "ブロックの順序であるため、あるペインのアンカーは、ブロックの名前をもう一方のペインに指定します。 各ブロックのアイデンティティで、何も変更されていない場合にのみ、翻訳を生き残ります。 他にはありません。高さ、線数、ラッピングはすべて自由に変更できます。"
   },
   {
     "kind": "heading",
     "en": "Enough length to scroll",
-    "ja": "スクロールできるだけの長さ"
+    "ja": "スクロールするのに十分な長さ"
   },
   {
     "kind": "paragraph",
     "en": "When a reader moves down a column, the thing they are tracking is not a pixel offset but a sentence. Restoring that sentence to the same height in the facing column is the whole of the problem.",
-    "ja": "読者が段を下っていくとき、追っているのはピクセル座標ではなく一つの文である。その文を向かいの段の同じ高さに置き直すこと、それがこの問題のすべてである。"
+    "ja": "リーダーが列を下に移動すると、追跡しているのはピクセル オフセットではなく、文章になります。 その文を対向列で同じ高さに復元するのが問題です。"
   },
   {
     "kind": "paragraph",
     "en": "It is also why the anchor is taken a fifth of the way down the viewport rather than at its very top: a block straddling the top edge is one the reader has already finished with.",
-    "ja": "基準線をビューポートの最上部ではなく五分の一の位置に取るのもそのためだ。上端にかかっているブロックは、読者がすでに読み終えたものだから。"
+    "ja": "これは、アンカーがビューポートの最上部ではなく、ビューポートの 5 分の 1 に下がるのも理由です。上端にまたがるブロックは、読者が既に終了したものです。"
+  },
+  {
+    "kind": "paragraph",
+    "en": "Sites that render differently on each load — an advertisement slot, a rotating quotation, a timestamp counted from now — break the assumption that two fetches of one URL produce one structure. Where that happens the panes cannot be paired, and saying so plainly is better than silently falling back to a proportional scroll that will drift.",
+    "ja": "1 つの URL の 2 つのフェッチが 1 つの構造を生成するという前提で、ロードごとに異なるレンダリングを行うサイト — 広告スロット、ローテーションの引用、タイムスタンプがカウントされます。 それが発生した場合、ペインをペアリングすることはできません。そうはっきりと言うことは、静かにドリフトするプロポーショナル スクロールに戻るよりも優れています。"
+  },
+  {
+    "kind": "paragraph",
+    "en": "Consider how much of a page is not prose: navigation, breadcrumbs, cookie notices, share buttons, bylines, timestamps, tag lists, related-article teasers, and the footer's list of corporate links. A translator that walks every text node spends most of its budget on these before it reaches the first sentence of the article, which is the argument for translating what is in view first and letting the rest arrive behind it.",
+    "ja": "ナビゲーション、ブレッドクラム、Cookie 通知、共有ボタン、バイライン、タイムスタンプ、タグリスト、関連記事のティーザー、フッターの企業リンクのリストなど、どの程度のページが散文でないかを考えてみてください。 すべてのテキスト ノードを歩く翻訳者は、記事の最初の文に到達する前に、その予算のほとんどをこれらに費やします。これは、最初に表示されているものを翻訳し、残りをその背後に到達させるための引数です。"
+  },
+  {
+    "kind": "paragraph",
+    "en": "Consider also how many of those fragments repeat. The word \"Home\" appears once in the header and once in the footer; a table's column heading repeats down a list of cards. Memoising on the trimmed string collapses them into a single call, and on an ordinary article that removes something between a sixth and a third of the work.",
+    "ja": "これらの断片のうち何回繰り返されるかも考慮してください。 「ホーム」という単語は、ヘッダーに 1 回、フッターに 1 回表示されます。 表の列見出しは、カードのリストを繰り返します。 トリムされた文字列でのメモは、それらを 1 回の呼び出しにまとめて、作業の 6 分の 1 から 3 分の 1 の間の何かを削除する通常の記事にまとめます。"
+  },
+  {
+    "kind": "paragraph",
+    "en": "The last thing worth saying is that none of this needs a network. The model runs on the machine, which means a page in a hotel with no signal translates exactly as fast as one at a desk, and no sentence of what is being read leaves the device.",
+    "ja": "最後に言いたいことは、これにはネットワークは必要ないということです。 モデルはマシン上で動作します。つまり、信号のないホテルのページは、デスクで 1 つと同じくらい速く翻訳され、読み取られた内容の文章がデバイスから離れることはありません。"
   }
 ]

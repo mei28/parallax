@@ -37,9 +37,10 @@ CYAN = "#22d3ee"  # the translation, and its right half
 
 ICON = b64encode((ROOT / "static" / "icons" / "icon-128.png").read_bytes()).decode()
 
-# Real sentences from the fixture and its translation. Invented copy in a picture about
-# translation would be the one thing a reader is entitled to disbelieve. Kept in a file of
-# their own because the promo video in video/ shows the same article.
+# Real sentences from the fixture, and what Chrome's Translator API actually makes of them.
+# Invented copy in a picture about translation would be the one thing a reader is entitled
+# to disbelieve, and so would a translation tidier than the one they will get. Kept in a
+# file of their own because the promo video in video/ shows the same article.
 ARTICLE = json.loads((ROOT / "store-assets" / "article.json").read_text(encoding="utf-8"))
 EN = [(block["kind"], block["en"]) for block in ARTICLE]
 JA = [(block["kind"], block["ja"]) for block in ARTICLE]
@@ -224,7 +225,7 @@ SHOTS: dict[str, str] = {
         "Aligned by <em>content</em>, not by percentage",
         "A translated paragraph rarely keeps its original height, so scrolling two columns "
         "in proportion drifts apart. parallax matches the panes block by block.",
-        f'<div class="stage">{window(rule=True, nudge="-9px")}</div>',
+        f'<div class="stage">{window(rule=True, nudge="-5px")}</div>',
     ),
     "3-adjustable": page(
         "Drag the split <em>anywhere</em>",

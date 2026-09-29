@@ -25,20 +25,32 @@ const Title: FC<{ caption: Caption }> = ({ caption: { title, accent } }) => {
   );
 };
 
+type StageProps = {
+  caption: Caption;
+  /**
+   * Whether the window rises into frame. A scene continuing from one that already brought
+   * the window up passes false, and the cut between them changes only the caption.
+   */
+  windowEnters: boolean;
+  children: ReactNode;
+};
+
 /**
- * The listing images' layout: a caption, with a browser window rising from below the frame
- * under it. The caption leaves at the end of the scene; the window stays, so the next scene
- * can carry on from where this one left it.
+ * The listing images' layout: a caption, with a browser window under it. The caption
+ * leaves at the end of the scene; the window stays, so the next scene can carry on from
+ * where this one left it.
  */
-export const Stage: FC<{ caption: Caption; children: ReactNode }> = ({ caption, children }) => {
+export const Stage: FC<StageProps> = ({ caption, windowEnters, children }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const exit = useExitStyle();
   const captionIn = spring({ frame, fps, config: { damping: 200 } });
-  const windowIn = spring({ frame: frame - 4, fps, config: { damping: 200 } });
+  const windowIn = windowEnters ? spring({ frame: frame - 4, fps, config: { damping: 200 } }) : 1;
   return (
     <AbsoluteFill style={{ display: "flex", flexDirection: "column" }}>
-      <header style={{ padding: "60px 96px 0", ...exit }}>
+      {/* Each line kept to one, so every caption is the same height and the window below
+          sits at the same place in every scene. */}
+      <header style={{ padding: "60px 96px 0", whiteSpace: "nowrap", ...exit }}>
         <div
           style={{
             opacity: captionIn,
