@@ -1,13 +1,12 @@
 import type { FC } from "react";
 import { Easing, interpolate, useCurrentFrame } from "remotion";
-import { ROOT_ANCHOR_ID } from "../../../src/shared/constants.ts";
 import { BrowserWindow } from "../components/BrowserWindow";
 import { Pane } from "../components/Pane";
 import { ReadingLine } from "../components/ReadingLine";
 import { SplitPanes } from "../components/SplitPanes";
 import { type Caption, Stage } from "../components/Stage";
 import { usePaneLayouts } from "../components/usePaneLayouts";
-import { follow, type Scrolls } from "../sync";
+import { scrollsFor } from "../sync";
 
 const CAPTION: Caption = {
   title: "Aligned by content, not by percentage",
@@ -21,9 +20,6 @@ const REVEAL_AT = 8;
 const REVEAL_FRAMES = 14;
 /** The reader scrolls the original: down, a pause to read, then on to the end. */
 const READ = { frames: [30, 95, 115, 180], share: [0, 0.45, 0.45, 1] };
-
-/** Before the panes have been measured: unscrolled, so they can be. Never captured. */
-const UNMEASURED: Scrolls = { original: 0, translation: 0, anchor: ROOT_ANCHOR_ID };
 
 /**
  * The reader scrolls the original and the translation follows, block for block, by the
@@ -41,10 +37,7 @@ export const Sync: FC = () => {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const aligned =
-    layouts.original === null || layouts.translation === null
-      ? UNMEASURED
-      : follow(layouts.original, layouts.translation, read);
+  const aligned = scrollsFor(layouts.original, layouts.translation, read);
   // Even unscrolled, putting the anchor block on the reading line moves the translation a few
   // pixels. The split scene left it at the top, so it settles into place as the line comes
   // up rather than jumping at the cut.
@@ -52,11 +45,12 @@ export const Sync: FC = () => {
   const mark = { id: scrolls.anchor, strength: reveal };
 
   return (
-    <Stage caption={CAPTION} windowEnters={false}>
+    <Stage caption={CAPTION} windowEnters={false} windowExits={false}>
       <BrowserWindow>
         <SplitPanes
           ratio={0.5}
           open={1}
+          stacked={false}
           original={
             <Pane
               translation="none"

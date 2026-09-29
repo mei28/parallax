@@ -1,4 +1,4 @@
-import { type CSSProperties, type FC, useLayoutEffect, useRef } from "react";
+import { type CSSProperties, type FC, useCallback, useLayoutEffect, useRef } from "react";
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { ROOT_ANCHOR_ID } from "../../../src/shared/constants.ts";
 import type { AnchorSample } from "../../../src/shared/scroll.ts";
@@ -154,6 +154,15 @@ const measure = (
   };
 };
 
+const sameSample = (a: AnchorSample, b: AnchorSample | undefined): boolean =>
+  b !== undefined && a.id === b.id && a.top === b.top && a.height === b.height;
+
+const sameLayout = (a: PaneLayout, b: PaneLayout): boolean =>
+  a.viewport === b.viewport &&
+  a.maxScroll === b.maxScroll &&
+  a.samples.length === b.samples.length &&
+  a.samples.every((sample, i) => sameSample(sample, b.samples[i]));
+
 type PaneProps = {
   translation: Translation;
   /** How much of the page has arrived in the pane, 0 to 1. */
@@ -161,7 +170,7 @@ type PaneProps = {
   /** How far down the page is scrolled, in pixels. */
   scroll: number;
   mark: Mark | null;
-  /** Receives the pane's layout once it is on screen, for a scene that scrolls by it. */
+  /** Receives the pane's layout whenever it changes, for a scene that scrolls by it. */
   onLayout?: (layout: PaneLayout) => void;
 };
 
@@ -171,21 +180,37 @@ export const Pane: FC<PaneProps> = ({ translation, loaded, scroll, mark, onLayou
   const viewportRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
   const columnRef = useRef<HTMLDivElement>(null);
+  const reportedRef = useRef<PaneLayout | null>(null);
+  /** Measures the pane and, if anything has moved since last time, tells the scene. */
+  const report = useCallback(() => {
+    if (onLayout === undefined) {
+      return;
+    }
+    const layout = measure(viewportRef.current, pageRef.current, columnRef.current);
+    if (reportedRef.current !== null && sameLayout(reportedRef.current, layout)) {
+      return;
+    }
+    reportedRef.current = layout;
+    onLayout(layout);
+  }, [onLayout]);
+  // After every render, because a scene that resizes the pane changes where the text wraps
+  // on every frame. A report made here re-renders the scene before the frame is painted.
+  useLayoutEffect(() => {
+    report();
+  });
+  // And on resize, because the frame is not always at its full size when the scene mounts,
+  // and the frame growing re-renders nothing.
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
     const page = pageRef.current;
-    if (onLayout === undefined || viewport === null || page === null) {
-      return;
+    if (viewport === null || page === null) {
+      throw new Error("Pane was laid out before it was mounted");
     }
-    const report = () => onLayout(measure(viewport, page, columnRef.current));
-    report();
-    // The frame is not always at its full size when the scene mounts, so measure again
-    // whenever the pane or its page is resized.
     const observer = new ResizeObserver(report);
     observer.observe(viewport);
     observer.observe(page);
     return () => observer.disconnect();
-  }, [onLayout]);
+  }, [report]);
 
   const blocks = ARTICLE.map((block, i) => ({ block, age: ageOf(translation, i, frame) }));
   const japanese = blocks.some(({ age }) => age !== null);
@@ -196,6 +221,7 @@ export const Pane: FC<PaneProps> = ({ translation, loaded, scroll, mark, onLayou
       ref={viewportRef}
       style={{
         position: "relative",
+        height: "100%",
         overflow: "hidden",
         background: japanese ? "#fafaff" : "#fff",
       }}

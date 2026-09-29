@@ -1,6 +1,6 @@
 // The extension's own anchor math, imported rather than reimplemented, so the panes in the
 // video follow each other exactly as they do in the browser.
-import { ANCHOR_LINE_FRACTION } from "../../src/shared/constants.ts";
+import { ANCHOR_LINE_FRACTION, ROOT_ANCHOR_ID } from "../../src/shared/constants.ts";
 import { pickAnchor, projectScrollTop } from "../../src/shared/scroll.ts";
 import type { PaneLayout } from "./components/Pane";
 
@@ -38,3 +38,17 @@ export const follow = (original: PaneLayout, translation: PaneLayout, read: numb
     anchor: pick.id,
   };
 };
+
+/** Before the panes have been measured: unscrolled, so they can be. */
+const UNMEASURED: Scrolls = { original: 0, translation: 0, anchor: ROOT_ANCHOR_ID };
+
+/**
+ * The scrolls for panes that may not have reported their layout yet. Until both have, they
+ * are drawn unscrolled to be measured, and delayRender keeps that draw from being a frame.
+ */
+export const scrollsFor = (
+  original: PaneLayout | null,
+  translation: PaneLayout | null,
+  read: number,
+): Scrolls =>
+  original === null || translation === null ? UNMEASURED : follow(original, translation, read);

@@ -2,9 +2,13 @@ import { useEffect, useState } from "react";
 import { continueRender, delayRender } from "remotion";
 import type { PaneLayout } from "./Pane";
 
-/** A pane measured before the frame had its size reports no height; wait for the real one. */
-const isLaidOut = (layout: PaneLayout | null): layout is PaneLayout =>
-  layout !== null && layout.viewport > 0;
+/**
+ * A pane measured before the frame had its size reports no height, so wait for a real one.
+ * Only the original is asked: it is on screen in every scene, while the translation can be
+ * closed to nothing on purpose.
+ */
+const isSized = (original: PaneLayout | null): boolean =>
+  original !== null && original.viewport > 0;
 
 /**
  * Collects the layouts both panes report once mounted, and holds the render until they have.
@@ -18,7 +22,7 @@ export const usePaneLayouts = () => {
   const [original, setOriginal] = useState<PaneLayout | null>(null);
   const [translation, setTranslation] = useState<PaneLayout | null>(null);
   useEffect(() => {
-    if (isLaidOut(original) && isLaidOut(translation)) {
+    if (isSized(original) && translation !== null) {
       continueRender(handle);
     }
   }, [original, translation, handle]);

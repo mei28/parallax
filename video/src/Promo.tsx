@@ -1,6 +1,7 @@
 import type { FC } from "react";
 import { Series } from "remotion";
 import { Backdrop } from "./components/Backdrop";
+import { Adjust } from "./scenes/Adjust";
 import { LogoIntro } from "./scenes/LogoIntro";
 import { Split } from "./scenes/Split";
 import { Sync } from "./scenes/Sync";
@@ -13,6 +14,7 @@ const SCENES = [
   { name: "Title", Scene: Title, duration: seconds(3) },
   { name: "Split", Scene: Split, duration: seconds(7) },
   { name: "Sync", Scene: Sync, duration: seconds(7) },
+  { name: "Adjust", Scene: Adjust, duration: seconds(6) },
 ];
 
 export const PROMO_DURATION = SCENES.reduce((total, scene) => total + scene.duration, 0);

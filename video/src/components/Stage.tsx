@@ -1,5 +1,12 @@
 import type { FC, ReactNode } from "react";
-import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import {
+  AbsoluteFill,
+  Easing,
+  interpolate,
+  spring,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 import { CYAN } from "../theme";
 import { useExitStyle } from "./Exit";
 
@@ -32,20 +39,33 @@ type StageProps = {
    * the window up passes false, and the cut between them changes only the caption.
    */
   windowEnters: boolean;
+  /** Whether the window sinks back out of frame at the end, for the last scene to use it. */
+  windowExits: boolean;
   children: ReactNode;
 };
 
+/** How many frames the window takes to sink out of frame. */
+const WINDOW_EXIT_FRAMES = 18;
+
 /**
  * The listing images' layout: a caption, with a browser window under it. The caption
- * leaves at the end of the scene; the window stays, so the next scene can carry on from
- * where this one left it.
+ * leaves at the end of the scene; the window stays unless told to go, so the next scene
+ * can carry on from where this one left it.
  */
-export const Stage: FC<StageProps> = ({ caption, windowEnters, children }) => {
+export const Stage: FC<StageProps> = ({ caption, windowEnters, windowExits, children }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, durationInFrames } = useVideoConfig();
   const exit = useExitStyle();
   const captionIn = spring({ frame, fps, config: { damping: 200 } });
   const windowIn = windowEnters ? spring({ frame: frame - 4, fps, config: { damping: 200 } }) : 1;
+  // Back the way it came in.
+  const windowOut = windowExits
+    ? interpolate(frame, [durationInFrames - WINDOW_EXIT_FRAMES, durationInFrames - 1], [0, 1], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+        easing: Easing.in(Easing.cubic),
+      })
+    : 0;
   return (
     <AbsoluteFill style={{ display: "flex", flexDirection: "column" }}>
       {/* Each line kept to one, so every caption is the same height and the window below
@@ -78,7 +98,7 @@ export const Stage: FC<StageProps> = ({ caption, windowEnters, children }) => {
           flex: 1,
           minHeight: 0,
           padding: "44px 96px 0",
-          transform: `translateY(${interpolate(windowIn, [0, 1], [900, 0])}px)`,
+          transform: `translateY(${900 * (1 - windowIn + windowOut)}px)`,
         }}
       >
         {children}
