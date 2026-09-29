@@ -9,6 +9,7 @@
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "isolatedModules": true,
+    "resolveJsonModule": true,
     "noEmit": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
