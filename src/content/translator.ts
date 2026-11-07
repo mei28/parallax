@@ -54,8 +54,9 @@ export async function createTranslator(
       for (const text of texts) {
         translations.push(await session.translate(text));
       }
-      return translations;
+      return { kind: "translated", texts: translations };
     },
+    accepts: (texts) => texts.length <= 1,
     destroy: () => session.destroy(),
   };
 }

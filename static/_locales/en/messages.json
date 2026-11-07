@@ -2,6 +2,15 @@
   "prompt_translate_page": {
     "message": "This page has not been translated yet."
   },
+  "status_rate_limited": {
+    "message": "Request limit reached. Continuing in $SECONDS$ s…",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "48"
+      }
+    }
+  },
   "action_retranslate": {
     "message": "Translate again"
   },

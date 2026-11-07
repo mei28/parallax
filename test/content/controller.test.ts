@@ -6,7 +6,7 @@
 // that vanished. None of them were reachable from a test until the collaborators became
 // injectable, because the Translator API does not exist in jsdom, an iframe never loads
 // there, and the overlay's shadow root is closed on purpose.
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ControllerDeps, ControllerHooks } from "../../src/content/controller.ts";
 import { startSplit } from "../../src/content/controller.ts";
 import type { PaneFrame } from "../../src/content/navigation.ts";
@@ -81,7 +81,11 @@ let hooks: ControllerHooks & { blocked: string[] };
 /** An engine that brackets each text, built on a per-text function the test can watch. */
 function fakeEngine(translate: (text: string) => Promise<string> = async (t) => `[${t}]`) {
   return {
-    translateBatch: async (texts: readonly string[]) => Promise.all(texts.map(translate)),
+    translateBatch: async (texts: readonly string[]) => ({
+      kind: "translated" as const,
+      texts: await Promise.all(texts.map(translate)),
+    }),
+    accepts: (texts: readonly string[]) => texts.length <= 1,
     destroy: vi.fn(),
   };
 }
@@ -413,6 +417,34 @@ describe("following a link", () => {
     expect(panes.target.visited).toEqual([]);
     // Reading another site is an ordinary thing to want; the reader gets their tab back.
     expect(overlay.destroy).toHaveBeenCalled();
+  });
+});
+
+describe("rate limits", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("tells the reader how long the service asked it to wait", async () => {
+    vi.useFakeTimers();
+    let calls = 0;
+    const engine = {
+      ...fakeEngine(),
+      translateBatch: async (texts: readonly string[]) =>
+        ++calls === 1
+          ? { kind: "rate-limited" as const, retryAfterSeconds: 2 }
+          : { kind: "translated" as const, texts: texts.map((text) => `[${text}]`) },
+    };
+
+    await startSplit(
+      document,
+      DEFAULT_PREFERENCES,
+      hooks,
+      deps({ createTranslator: async () => engine }),
+    );
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(overlay.setStatus).toHaveBeenLastCalledWith("translating", "status_rate_limited(2)");
   });
 });
 

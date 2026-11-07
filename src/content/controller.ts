@@ -18,9 +18,10 @@ import { createResizer } from "./resizer.ts";
 import type { ScrollSync } from "./scroll-sync.ts";
 import { createScrollSync } from "./scroll-sync.ts";
 import { collectTextNodes } from "./text-nodes.ts";
-import type { Queue, TranslateTarget, TranslationEngine } from "./translate-queue.ts";
+import type { Queue, TranslationEngine, TranslationUnit } from "./translate-queue.ts";
 import { createQueue } from "./translate-queue.ts";
 import { checkAvailability, createTranslator } from "./translator.ts";
+import { nodeUnit } from "./units.ts";
 
 /** Two viewports of lead time, so height changes happen well below the reading position. */
 const LAZY_ROOT_MARGIN = "200% 0px 200% 0px";
@@ -68,7 +69,7 @@ export interface ControllerHooks {
 function groupByBlock(doc: Document, nodes: readonly Text[]) {
   const blocks: Element[] = [];
   const indexOf = new Map<Element, number>();
-  const targets: TranslateTarget[] = [];
+  const targets: TranslationUnit[] = [];
 
   for (const node of nodes) {
     const block = node.parentElement?.closest(BLOCK_SELECTOR) ?? doc.body;
@@ -78,7 +79,7 @@ function groupByBlock(doc: Document, nodes: readonly Text[]) {
       indexOf.set(block, index);
       blocks.push(block);
     }
-    targets.push({ node, anchorId: index });
+    targets.push(nodeUnit(node, index));
   }
   return { blocks, targets };
 }
@@ -403,6 +404,12 @@ export async function startSplit(
       },
       onError(failure) {
         overlay.setStatus("error", renderMessage(describeFailure(failure)));
+      },
+      onWait(secondsLeft) {
+        overlay.setStatus(
+          "translating",
+          renderMessage({ key: "status_rate_limited", substitutions: [String(secondsLeft)] }),
+        );
       },
       signal: pageAbort.signal,
     });
