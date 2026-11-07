@@ -1,6 +1,8 @@
 // The messages that cross between the popup, the service worker and the content script.
 import type { ArmResult } from "../chrome/framing.ts";
-import type { Preferences } from "./types.ts";
+import type { ParallaxFailure } from "./errors.ts";
+import type { SarashinaOutcome } from "./sarashina.ts";
+import type { LanguagePair, Preferences } from "./types.ts";
 
 export type Message =
   | { readonly type: "START_SPLIT"; readonly preferences: Preferences }
@@ -37,3 +39,19 @@ export type FramingResponse = ArmResult;
 export interface DiagnoseResponse {
   readonly refusal: string | null;
 }
+
+/**
+ * Content script to service worker. The worker holds the API key and makes the request, so
+ * the key never enters the page's renderer, and the fetch is made from the extension's
+ * origin, where the host permission lets it past CORS.
+ */
+export type SarashinaMessage =
+  | { readonly type: "SARASHINA_READY" }
+  | { readonly type: "SARASHINA_TRANSLATE"; readonly pair: LanguagePair; readonly text: string };
+
+/** Whether a key is set and the host may be reached; the failure to show when not. */
+export interface SarashinaReadyResponse {
+  readonly failure: ParallaxFailure | null;
+}
+
+export type SarashinaTranslateResponse = SarashinaOutcome;

@@ -8,6 +8,16 @@
   <body>
     <h1>parallax</h1>
 
+    <label class="field" for="provider">Translator</label>
+    <select id="provider">
+      <option value="on-device">Chrome (on device)</option>
+      <option value="sarashina">Sarashina API</option>
+    </select>
+    <p id="setup" hidden>
+      Sarashina needs an API key and access to api.sarashina.ai.
+      <button type="button" id="open-options">Open options</button>
+    </p>
+
     <label class="field" for="source">From</label>
     <select id="source"></select>
 

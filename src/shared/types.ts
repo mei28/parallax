@@ -29,7 +29,11 @@ export interface LanguagePair {
   readonly target: string;
 }
 
+/** Which translator does the work: Chrome's on-device model, or Sarashina with the reader's key. */
+export type TranslationProvider = "on-device" | "sarashina";
+
 export interface Preferences {
+  readonly provider: TranslationProvider;
   readonly sourceLanguage: string;
   readonly targetLanguage: string;
   readonly orientation: Orientation;

@@ -8,6 +8,7 @@
 import type { ParallaxFailure } from "../shared/errors.ts";
 import { ParallaxError } from "../shared/errors.ts";
 import { reassemble, segmentWhitespace } from "../shared/text.ts";
+import type { Block } from "./units.ts";
 
 /** Text nodes translated as one piece, and what is sent to the translator for them. */
 export interface TranslationUnit {
@@ -33,6 +34,8 @@ export type BatchOutcome =
  * same order. Injected so the queue is testable without the real Translator API.
  */
 export interface TranslationEngine {
+  /** How this engine wants a page cut up: a node at a time, or a paragraph at a time. */
+  unitsOf(blocks: readonly Block[]): TranslationUnit[];
   translateBatch(texts: readonly string[]): Promise<BatchOutcome>;
   /** Whether these texts can go out in one batch. */
   accepts(texts: readonly string[]): boolean;

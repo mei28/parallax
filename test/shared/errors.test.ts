@@ -47,6 +47,26 @@ describe("describeFailure", () => {
   });
 });
 
+describe("describeFailure, for a remote translator", () => {
+  it.each([
+    [{ code: "API_KEY_MISSING" }, []],
+    [{ code: "API_PERMISSION_MISSING" }, []],
+    [{ code: "API_AUTH_FAILED" }, []],
+    [{ code: "API_FORBIDDEN", detail: { message: "Forbidden" } }, ["Forbidden"]],
+    [
+      { code: "API_REQUEST_FAILED", detail: { status: 500, message: "Internal Server Error" } },
+      ["500", "Internal Server Error"],
+    ],
+    [{ code: "API_TIMEOUT", detail: { seconds: 25 } }, ["25"]],
+    [{ code: "API_UNREACHABLE", detail: { reason: "Failed to fetch" } }, ["Failed to fetch"]],
+    [{ code: "BATCH_MISMATCH", detail: { expected: 12, actual: 11 } }, ["12", "11"]],
+    [{ code: "TEXT_TOO_LONG", detail: { length: 5210, limit: 5000 } }, ["5210", "5000"]],
+    [{ code: "PROVIDER_PAIR_UNSUPPORTED", detail: { source: "fr", target: "ja" } }, ["fr", "ja"]],
+  ] as const)("describes %o with its detail in order", (failure, substitutions) => {
+    expect(describeFailure(failure).substitutions).toEqual(substitutions);
+  });
+});
+
 describe("ParallaxError", () => {
   it("carries its code and the failure it was built from", () => {
     const error = new ParallaxError({ code: "FRAME_BLOCKED" });
@@ -117,6 +137,22 @@ describe("locale catalogues", () => {
       FRAME_BUSTED: { code: "FRAME_BUSTED" },
       FRAMING_UNSAFE: { code: "FRAMING_UNSAFE", detail: { reason: "nonce" } },
       NO_ANCHORS: { code: "NO_ANCHORS" },
+      API_KEY_MISSING: { code: "API_KEY_MISSING" },
+      API_PERMISSION_MISSING: { code: "API_PERMISSION_MISSING" },
+      API_AUTH_FAILED: { code: "API_AUTH_FAILED" },
+      API_FORBIDDEN: { code: "API_FORBIDDEN", detail: { message: "Forbidden" } },
+      API_REQUEST_FAILED: {
+        code: "API_REQUEST_FAILED",
+        detail: { status: 500, message: "Internal Server Error" },
+      },
+      API_TIMEOUT: { code: "API_TIMEOUT", detail: { seconds: 25 } },
+      API_UNREACHABLE: { code: "API_UNREACHABLE", detail: { reason: "Failed to fetch" } },
+      BATCH_MISMATCH: { code: "BATCH_MISMATCH", detail: { expected: 12, actual: 11 } },
+      TEXT_TOO_LONG: { code: "TEXT_TOO_LONG", detail: { length: 5210, limit: 5000 } },
+      PROVIDER_PAIR_UNSUPPORTED: {
+        code: "PROVIDER_PAIR_UNSUPPORTED",
+        detail: { source: "fr", target: "ja" },
+      },
     } as const;
 
     for (const code of ALL_FAILURE_CODES) {

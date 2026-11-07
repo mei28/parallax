@@ -123,6 +123,22 @@ select {
   display: none;
 }
 
+#setup {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+#setup[hidden] {
+  display: none;
+}
+
+#open-options {
+  margin-top: 4px;
+  cursor: pointer;
+}
+
 #override {
   grid-column: 1 / -1;
   display: grid;

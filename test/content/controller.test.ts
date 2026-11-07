@@ -11,6 +11,8 @@ import type { ControllerDeps, ControllerHooks } from "../../src/content/controll
 import { startSplit } from "../../src/content/controller.ts";
 import type { PaneFrame } from "../../src/content/navigation.ts";
 import type { Overlay } from "../../src/content/overlay.ts";
+import type { Block } from "../../src/content/units.ts";
+import { blockUnits, nodeUnits } from "../../src/content/units.ts";
 import { DEFAULT_PREFERENCES } from "../../src/shared/constants.ts";
 import { ParallaxError } from "../../src/shared/errors.ts";
 
@@ -86,6 +88,7 @@ function fakeEngine(translate: (text: string) => Promise<string> = async (t) => 
       texts: await Promise.all(texts.map(translate)),
     }),
     accepts: (texts: readonly string[]) => texts.length <= 1,
+    unitsOf: nodeUnits,
     destroy: vi.fn(),
   };
 }
@@ -93,7 +96,7 @@ function fakeEngine(translate: (text: string) => Promise<string> = async (t) => 
 function deps(overrides: Partial<ControllerDeps> = {}): ControllerDeps {
   return {
     checkAvailability: async () => "available",
-    createTranslator: async () => fakeEngine(),
+    createEngine: async () => fakeEngine(),
     openPane: async () => paneDocument(),
     adoptPane: () => paneDocument(),
     requestFramingOverride: async () => ({ kind: "no-permission" }),
@@ -295,13 +298,13 @@ describe("a site that refuses to be embedded", () => {
   });
 
   it("never reaches the translator", async () => {
-    const createTranslator = vi.fn();
+    const createEngine = vi.fn();
     await startSplit(document, DEFAULT_PREFERENCES, hooks, {
       ...blocked(),
-      createTranslator,
+      createEngine,
     } as ControllerDeps);
 
-    expect(createTranslator).not.toHaveBeenCalled();
+    expect(createEngine).not.toHaveBeenCalled();
   });
 });
 
@@ -348,7 +351,7 @@ describe("following a link", () => {
   it("translates the page it followed to", async () => {
     const translate = vi.fn(async (text: string) => `[${text}]`);
     const { panes, deps: d } = navigableDeps({
-      createTranslator: async () => fakeEngine(translate),
+      createEngine: async () => fakeEngine(translate),
     });
     await startSplit(document, DEFAULT_PREFERENCES, hooks, d);
     await new Promise((resolve) => setTimeout(resolve));
@@ -362,15 +365,15 @@ describe("following a link", () => {
   });
 
   it("keeps the translator session, so the next page needs no download", async () => {
-    const createTranslator = vi.fn(async () => fakeEngine());
-    const { panes, deps: d } = navigableDeps({ createTranslator });
+    const createEngine = vi.fn(async () => fakeEngine());
+    const { panes, deps: d } = navigableDeps({ createEngine });
     await startSplit(document, DEFAULT_PREFERENCES, hooks, d);
     await new Promise((resolve) => setTimeout(resolve));
 
     panes.source.go(NEXT);
     await new Promise((resolve) => setTimeout(resolve));
 
-    expect(createTranslator).toHaveBeenCalledOnce();
+    expect(createEngine).toHaveBeenCalledOnce();
   });
 
   it("takes its offer back once the new page starts translating", async () => {
@@ -391,7 +394,7 @@ describe("following a link", () => {
     const { panes, deps: d } = navigableDeps({
       // No translator yet: the reader has not accepted the language-pack download.
       checkAvailability: async () => "downloadable",
-      createTranslator: async () => fakeEngine(translate),
+      createEngine: async () => fakeEngine(translate),
     });
     await startSplit(document, DEFAULT_PREFERENCES, hooks, d);
     await new Promise((resolve) => setTimeout(resolve));
@@ -420,6 +423,50 @@ describe("following a link", () => {
   });
 });
 
+describe("choosing a translator", () => {
+  it("asks the translator the reader chose, about the languages they chose", async () => {
+    const checkAvailability = vi.fn(async () => "available" as const);
+    const createEngine = vi.fn(async () => fakeEngine());
+    const preferences = { ...DEFAULT_PREFERENCES, provider: "sarashina" as const };
+
+    await startSplit(document, preferences, hooks, deps({ checkAvailability, createEngine }));
+    await new Promise((resolve) => setTimeout(resolve));
+
+    const pair = { source: preferences.sourceLanguage, target: preferences.targetLanguage };
+    expect(checkAvailability).toHaveBeenCalledWith("sarashina", pair);
+    expect(createEngine).toHaveBeenCalledWith("sarashina", pair, expect.anything());
+  });
+
+  // A translator that rewrites a paragraph as a whole takes the paragraph as its unit. The
+  // engine decides; the controller only hands it the blocks.
+  it("translates in the units the engine makes", async () => {
+    const panes: Document[] = [];
+    const engine = {
+      ...fakeEngine(),
+      unitsOf: (blocks: readonly Block[]) => blockUnits(blocks, () => true),
+    };
+
+    await startSplit(
+      document,
+      DEFAULT_PREFERENCES,
+      hooks,
+      deps({
+        openPane: async () => {
+          const pane = paneDocument("<p>Read the <a>docs</a> first.</p>");
+          panes.push(pane);
+          return pane;
+        },
+        createEngine: async () => engine,
+      }),
+    );
+    await new Promise((resolve) => setTimeout(resolve));
+
+    const translated = panes[1]?.querySelector("p");
+    expect(translated?.textContent).toBe("[Read the docs first.]  ");
+    expect(translated?.querySelector("a")?.textContent).toBe("");
+  });
+});
+
 describe("rate limits", () => {
   afterEach(() => {
     vi.useRealTimers();
@@ -440,7 +487,7 @@ describe("rate limits", () => {
       document,
       DEFAULT_PREFERENCES,
       hooks,
-      deps({ createTranslator: async () => engine }),
+      deps({ createEngine: async () => engine }),
     );
     await vi.advanceTimersByTimeAsync(0);
 

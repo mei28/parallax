@@ -5,6 +5,7 @@
 import { ParallaxError } from "../shared/errors.ts";
 import type { LanguagePair } from "../shared/types.ts";
 import type { TranslationEngine } from "./translate-queue.ts";
+import { nodeUnits } from "./units.ts";
 
 export interface CreateCallbacks {
   /** Fraction 0..1 while a language pack downloads. Never called if it is already present. */
@@ -49,6 +50,7 @@ export async function createTranslator(
 ): Promise<TranslationEngine> {
   const session = await openSession(pair, callbacks);
   return {
+    unitsOf: nodeUnits,
     async translateBatch(texts) {
       const translations: string[] = [];
       for (const text of texts) {

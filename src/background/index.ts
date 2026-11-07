@@ -1,12 +1,20 @@
 // Service worker entry point.
 //
-// It owns the keyboard commands and nothing else. The Translator API is not available in
-// worker contexts, and the popup talks to the tab directly, so there is no reason for any
-// other work to pass through here.
+// It owns the keyboard commands, the framing overrides, and the requests to Sarashina. The
+// Translator API is not available in worker contexts, and the popup talks to the tab
+// directly, so nothing else passes through here.
 import { armFraming, diagnoseFraming, disarmFraming } from "../chrome/framing.ts";
 import { sendToTab } from "../chrome/inject.ts";
+import { checkSarashinaReady, translateWithSarashina } from "../chrome/sarashina.ts";
 import { loadPreferences } from "../chrome/storage.ts";
-import type { DiagnoseResponse, FramingMessage, FramingResponse } from "../shared/messages.ts";
+import type {
+  DiagnoseResponse,
+  FramingMessage,
+  FramingResponse,
+  SarashinaMessage,
+  SarashinaReadyResponse,
+  SarashinaTranslateResponse,
+} from "../shared/messages.ts";
 import { isSplittableUrl } from "../shared/url.ts";
 
 chrome.commands.onCommand.addListener((command, tab) => {
@@ -18,10 +26,27 @@ chrome.commands.onCommand.addListener((command, tab) => {
 // into another tab.
 chrome.runtime.onMessage.addListener(
   (
-    message: FramingMessage,
+    message: FramingMessage | SarashinaMessage,
     sender,
-    respond: (response: FramingResponse | DiagnoseResponse) => void,
+    respond: (
+      response:
+        | FramingResponse
+        | DiagnoseResponse
+        | SarashinaReadyResponse
+        | SarashinaTranslateResponse,
+    ) => void,
   ) => {
+    // Sarashina requests are made here because the key is kept here, and because only this
+    // origin's fetch carries the host permission past CORS.
+    if (message.type === "SARASHINA_READY") {
+      checkSarashinaReady().then((failure) => respond({ failure }));
+      return true;
+    }
+    if (message.type === "SARASHINA_TRANSLATE") {
+      translateWithSarashina(message.pair, message.text).then(respond);
+      return true;
+    }
+
     const tabId = sender.tab?.id;
     if (tabId === undefined) {
       return false;

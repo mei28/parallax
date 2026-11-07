@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   hasTranslatableContent,
   isSkippedTag,
+  joinNodeTexts,
   reassemble,
   segmentWhitespace,
 } from "../../src/shared/text.ts";
@@ -92,5 +93,19 @@ describe("isSkippedTag", () => {
   it("matches regardless of case", () => {
     expect(isSkippedTag("code")).toBe(true);
     expect(isSkippedTag("Script")).toBe(true);
+  });
+});
+
+describe("joinNodeTexts", () => {
+  it("reads a paragraph's nodes as one line of text", () => {
+    expect(joinNodeTexts(["Read the ", "docs", "\n    for details."])).toBe(
+      "Read the docs for details.",
+    );
+  });
+
+  // `<a>Foo</a> <a>Bar</a>`: the space between the links is a node of its own, holding no
+  // letters, so it is never collected. Without a space put back the words would run together.
+  it("keeps words in neighbouring elements apart", () => {
+    expect(joinNodeTexts(["Foo", "Bar"])).toBe("Foo Bar");
   });
 });

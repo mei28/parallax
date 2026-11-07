@@ -7,6 +7,7 @@
 import { renderMessage } from "../chrome/i18n.ts";
 import { describeFailure, ParallaxError } from "../shared/errors.ts";
 import type { LanguagePair, PaneId, Preferences } from "../shared/types.ts";
+import { checkAvailability, createEngine } from "./engines.ts";
 import { adoptPane, openPane } from "./frames.ts";
 import { diagnoseFraming, releaseFramingOverride, requestFramingOverride } from "./framing.ts";
 import type { NavigationFollower } from "./navigation.ts";
@@ -18,10 +19,9 @@ import { createResizer } from "./resizer.ts";
 import type { ScrollSync } from "./scroll-sync.ts";
 import { createScrollSync } from "./scroll-sync.ts";
 import { collectTextNodes } from "./text-nodes.ts";
-import type { Queue, TranslationEngine, TranslationUnit } from "./translate-queue.ts";
+import type { Queue, TranslationEngine } from "./translate-queue.ts";
 import { createQueue } from "./translate-queue.ts";
-import { checkAvailability, createTranslator } from "./translator.ts";
-import { nodeUnit } from "./units.ts";
+import type { Block } from "./units.ts";
 
 /** Two viewports of lead time, so height changes happen well below the reading position. */
 const LAZY_ROOT_MARGIN = "200% 0px 200% 0px";
@@ -66,22 +66,23 @@ export interface ControllerHooks {
   onFrameBlocked(origin: string): void;
 }
 
-function groupByBlock(doc: Document, nodes: readonly Text[]) {
-  const blocks: Element[] = [];
-  const indexOf = new Map<Element, number>();
-  const targets: TranslationUnit[] = [];
+/** The blocks that hold the page's text, in document order, numbered by position. */
+function groupByBlock(doc: Document, nodes: readonly Text[]): Block[] {
+  const blocks: { element: Element; nodes: Text[]; anchorId: number }[] = [];
+  const byElement = new Map<Element, { nodes: Text[] }>();
 
   for (const node of nodes) {
-    const block = node.parentElement?.closest(BLOCK_SELECTOR) ?? doc.body;
-    let index = indexOf.get(block);
-    if (index === undefined) {
-      index = blocks.length;
-      indexOf.set(block, index);
-      blocks.push(block);
+    const element = node.parentElement?.closest(BLOCK_SELECTOR) ?? doc.body;
+    let block = byElement.get(element);
+    if (block === undefined) {
+      const created = { element, nodes: [], anchorId: blocks.length };
+      blocks.push(created);
+      byElement.set(element, created);
+      block = created;
     }
-    targets.push(nodeUnit(node, index));
+    block.nodes.push(node);
   }
-  return { blocks, targets };
+  return blocks;
 }
 
 /**
@@ -130,7 +131,7 @@ function observeViewport(
  */
 export interface ControllerDeps {
   checkAvailability: typeof checkAvailability;
-  createTranslator: typeof createTranslator;
+  createEngine: typeof createEngine;
   openPane: typeof openPane;
   adoptPane: typeof adoptPane;
   requestFramingOverride: typeof requestFramingOverride;
@@ -142,7 +143,7 @@ export interface ControllerDeps {
 
 const REAL_DEPS: ControllerDeps = {
   checkAvailability,
-  createTranslator,
+  createEngine,
   openPane,
   adoptPane,
   requestFramingOverride,
@@ -164,7 +165,7 @@ export async function startSplit(
   };
 
   // Before anything is built, so a refusal costs nothing.
-  const availability = await deps.checkAvailability(pair);
+  const availability = await deps.checkAvailability(preferences.provider, pair);
 
   // Before the frames exist, because the headers have to be rewritten on their first
   // request. Costs nothing on a site the reader has not granted: the worker returns without
@@ -364,7 +365,7 @@ export async function startSplit(
 
   const run = async (): Promise<void> => {
     try {
-      translator = await deps.createTranslator(pair, {
+      translator = await deps.createEngine(preferences.provider, pair, {
         onDownloadProgress(fraction) {
           overlay.setStatus("downloading", `Downloading the language pack — ${fraction * 100}%`);
           overlay.setProgress(fraction);
@@ -385,8 +386,8 @@ export async function startSplit(
     if (session === null) {
       return false;
     }
-    const { blocks, targets } = groupByBlock(targetDoc, collectTextNodes(targetDoc.body));
-    if (targets.length === 0) {
+    const blocks = groupByBlock(targetDoc, collectTextNodes(targetDoc.body));
+    if (blocks.length === 0) {
       overlay.setStatus("ready", "Nothing on this page needs translating.");
       return true;
     }
@@ -416,8 +417,13 @@ export async function startSplit(
 
     // openPane() has already proved this frame is same-origin and readable.
     const frameWindow = overlay.frames.target.contentWindow as Window & typeof globalThis;
-    observeViewport(frameWindow, blocks, queue, pageAbort.signal);
-    queue.enqueue(targets);
+    observeViewport(
+      frameWindow,
+      blocks.map((block) => block.element),
+      queue,
+      pageAbort.signal,
+    );
+    queue.enqueue(session.unitsOf(blocks));
     return true;
   }
 

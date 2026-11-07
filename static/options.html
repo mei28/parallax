@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>parallax options</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>parallax</h1>
+
+      <section aria-labelledby="sarashina-heading">
+        <h2 id="sarashina-heading">Sarashina API</h2>
+        <p>
+          parallax translates with Chrome's on-device translator unless you choose Sarashina in
+          its popup. Sarashina is SB Intuitions' translation API, for English and Japanese in
+          either direction. It translates a paragraph at a time, so the result reads as whole
+          sentences, but links and emphasis inside a paragraph are not kept in the translated
+          pane.
+        </p>
+        <ul>
+          <li>
+            When Sarashina is chosen, the text of every page you split is sent to
+            <code>api.sarashina.ai</code> to be translated.
+          </li>
+          <li>
+            The key is stored unencrypted in this browser profile. SB Intuitions advises against
+            using API keys in browser code, so use a key you can revoke.
+          </li>
+          <li>The service accepts requests from Japan only.</li>
+        </ul>
+
+        <label for="key">API key</label>
+        <input id="key" type="password" autocomplete="off" spellcheck="false" />
+        <div class="actions">
+          <button type="button" id="save" class="primary">Save and allow access</button>
+          <button type="button" id="remove">Remove key</button>
+        </div>
+        <p id="status" role="status"></p>
+      </section>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>
