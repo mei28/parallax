@@ -18,9 +18,8 @@ import { createResizer } from "./resizer.ts";
 import type { ScrollSync } from "./scroll-sync.ts";
 import { createScrollSync } from "./scroll-sync.ts";
 import { collectTextNodes } from "./text-nodes.ts";
-import type { Queue, TranslateTarget } from "./translate-queue.ts";
+import type { Queue, TranslateTarget, TranslationEngine } from "./translate-queue.ts";
 import { createQueue } from "./translate-queue.ts";
-import type { TranslatorSession } from "./translator.ts";
 import { checkAvailability, createTranslator } from "./translator.ts";
 
 /** Two viewports of lead time, so height changes happen well below the reading position. */
@@ -178,7 +177,7 @@ export async function startSplit(
 
   let queue: Queue | null = null;
   let scrollSync: ScrollSync | null = null;
-  let translator: TranslatorSession | null = null;
+  let translator: TranslationEngine | null = null;
   let orientation = preferences.orientation;
   // Two separate questions. `splitting` is whether the reader is still comparing two panes;
   // `open` is whether anything of ours is on screen at all. Collapsing the original ends the
@@ -392,7 +391,7 @@ export async function startSplit(
     }
 
     queue = createQueue({
-      translate: (text) => session.translate(text),
+      engine: session,
       onProgress(done, total) {
         overlay.setStatus("translating", `Translating ${done} of ${total}…`);
         if (done === total) {
@@ -403,10 +402,7 @@ export async function startSplit(
         scrollSync?.invalidate();
       },
       onError(failure) {
-        overlay.setStatus(
-          "error",
-          renderMessage(describeFailure({ code: "TRANSLATE_FAILED", detail: failure })),
-        );
+        overlay.setStatus("error", renderMessage(describeFailure(failure)));
       },
       signal: pageAbort.signal,
     });

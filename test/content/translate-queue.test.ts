@@ -13,9 +13,16 @@ function target(text: string, anchorId: number): TranslateTarget {
   return { node: document.createTextNode(text), anchorId };
 }
 
+/** An engine that brackets each text, built on a per-text function the test can watch. */
+function engine(translate: (text: string) => Promise<string> = async (text) => `[${text}]`) {
+  return {
+    translateBatch: async (texts: readonly string[]) => Promise.all(texts.map(translate)),
+  };
+}
+
 function options(overrides: Partial<Parameters<typeof createQueue>[0]> = {}) {
   return {
-    translate: async (text: string) => `[${text}]`,
+    engine: engine(),
     onProgress: () => {},
     onCommit: () => {},
     onError: () => {},
@@ -47,7 +54,7 @@ describe("createQueue", () => {
 
   it("translates repeated text once and reuses the result", async () => {
     const translate = vi.fn(async (text: string) => `[${text}]`);
-    const queue = createQueue(options({ translate }));
+    const queue = createQueue(options({ engine: engine(translate) }));
     const first = target("Home", 0);
     const second = target("Home", 1);
 
@@ -74,7 +81,7 @@ describe("createQueue", () => {
       order.push(text);
       return `[${text}]`;
     });
-    const queue = createQueue(options({ translate }));
+    const queue = createQueue(options({ engine: engine(translate) }));
 
     queue.enqueue([target("First", 0), target("Second", 1), target("Third", 2)]);
     queue.prioritize([2]);
@@ -91,7 +98,7 @@ describe("createQueue", () => {
       return `[${text}]`;
     });
     const onError = vi.fn();
-    const queue = createQueue(options({ translate, onError }));
+    const queue = createQueue(options({ engine: engine(translate), onError }));
     const third = target("Three", 2);
 
     queue.enqueue([target("One", 0), target("Two", 1), third]);
@@ -106,9 +113,9 @@ describe("createQueue", () => {
     const onError = vi.fn();
     const queue = createQueue(
       options({
-        translate: async () => {
+        engine: engine(async () => {
           throw new Error("nope");
-        },
+        }),
         onError,
       }),
     );
@@ -116,9 +123,10 @@ describe("createQueue", () => {
     queue.enqueue([target("One", 0), target("Two", 1)]);
     await queue.whenIdle();
 
-    expect(onError).toHaveBeenCalledWith(
-      expect.objectContaining({ done: 0, total: 2, reason: "nope" }),
-    );
+    expect(onError).toHaveBeenCalledWith({
+      code: "TRANSLATE_FAILED",
+      detail: { done: 0, total: 2, reason: "nope" },
+    });
   });
 
   it("stops translating once the controller aborts", async () => {
@@ -127,7 +135,7 @@ describe("createQueue", () => {
       controller.abort();
       return `[${text}]`;
     });
-    const queue = createQueue(options({ translate, signal: controller.signal }));
+    const queue = createQueue(options({ engine: engine(translate), signal: controller.signal }));
 
     queue.enqueue([target("One", 0), target("Two", 1), target("Three", 2)]);
     await queue.whenIdle();

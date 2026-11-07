@@ -4,6 +4,7 @@
 // so a 400-node article translated front to back would block for well over ten seconds. Two
 // things make that tolerable: working the blocks currently in view first, and never asking
 // for the same string twice.
+import type { ParallaxFailure } from "../shared/errors.ts";
 import { reassemble, segmentWhitespace } from "../shared/text.ts";
 
 export interface TranslateTarget {
@@ -12,19 +13,21 @@ export interface TranslateTarget {
   readonly anchorId: number;
 }
 
-export interface TranslationFailure {
-  readonly done: number;
-  readonly total: number;
-  readonly reason: string;
+/**
+ * A translator as the queue sees it: texts in, the same number of translations out, in the
+ * same order. Injected so the queue is testable without the real Translator API.
+ */
+export interface TranslationEngine {
+  translateBatch(texts: readonly string[]): Promise<readonly string[]>;
+  destroy(): void;
 }
 
 export interface QueueOptions {
-  /** Injected so the queue is testable without the real Translator API. */
-  translate: (text: string) => Promise<string>;
+  engine: Pick<TranslationEngine, "translateBatch">;
   onProgress: (done: number, total: number) => void;
   /** Called after each batch lands, so scroll samples can be recomputed. */
   onCommit: () => void;
-  onError: (failure: TranslationFailure) => void;
+  onError: (failure: ParallaxFailure) => void;
   signal: AbortSignal;
 }
 
@@ -41,6 +44,14 @@ export interface Queue {
 const COMMIT_BATCH = 20;
 
 export function createQueue(options: QueueOptions): Queue {
+  async function translateOne(text: string): Promise<string> {
+    const [translated] = await options.engine.translateBatch([text]);
+    if (translated === undefined) {
+      throw new Error("the translator answered no text");
+    }
+    return translated;
+  }
+
   const pending: TranslateTarget[] = [];
   const memo = new Map<string, string>();
   let total = 0;
@@ -61,15 +72,18 @@ export function createQueue(options: QueueOptions): Queue {
       let translated: string;
       if (cached === undefined) {
         try {
-          translated = await options.translate(segmented.core);
+          translated = await translateOne(segmented.core);
         } catch (error) {
           // Stop here rather than skipping the node. Everything after it stays in the
           // original language, visibly, instead of leaving a hole nobody notices.
           stopped = true;
           options.onError({
-            done,
-            total,
-            reason: error instanceof Error ? error.message : String(error),
+            code: "TRANSLATE_FAILED",
+            detail: {
+              done,
+              total,
+              reason: error instanceof Error ? error.message : String(error),
+            },
           });
           return;
         }

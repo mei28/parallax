@@ -78,10 +78,18 @@ function paneDocument(html = "<p>Hello</p>"): Document {
 let overlay: ReturnType<typeof fakeOverlay>;
 let hooks: ControllerHooks & { blocked: string[] };
 
+/** An engine that brackets each text, built on a per-text function the test can watch. */
+function fakeEngine(translate: (text: string) => Promise<string> = async (t) => `[${t}]`) {
+  return {
+    translateBatch: async (texts: readonly string[]) => Promise.all(texts.map(translate)),
+    destroy: vi.fn(),
+  };
+}
+
 function deps(overrides: Partial<ControllerDeps> = {}): ControllerDeps {
   return {
     checkAvailability: async () => "available",
-    createTranslator: async () => ({ translate: async (t: string) => `[${t}]`, destroy: vi.fn() }),
+    createTranslator: async () => fakeEngine(),
     openPane: async () => paneDocument(),
     adoptPane: () => paneDocument(),
     requestFramingOverride: async () => ({ kind: "no-permission" }),
@@ -336,7 +344,7 @@ describe("following a link", () => {
   it("translates the page it followed to", async () => {
     const translate = vi.fn(async (text: string) => `[${text}]`);
     const { panes, deps: d } = navigableDeps({
-      createTranslator: async () => ({ translate, destroy: vi.fn() }),
+      createTranslator: async () => fakeEngine(translate),
     });
     await startSplit(document, DEFAULT_PREFERENCES, hooks, d);
     await new Promise((resolve) => setTimeout(resolve));
@@ -350,10 +358,7 @@ describe("following a link", () => {
   });
 
   it("keeps the translator session, so the next page needs no download", async () => {
-    const createTranslator = vi.fn(async () => ({
-      translate: async (t: string) => `[${t}]`,
-      destroy: vi.fn(),
-    }));
+    const createTranslator = vi.fn(async () => fakeEngine());
     const { panes, deps: d } = navigableDeps({ createTranslator });
     await startSplit(document, DEFAULT_PREFERENCES, hooks, d);
     await new Promise((resolve) => setTimeout(resolve));
@@ -382,7 +387,7 @@ describe("following a link", () => {
     const { panes, deps: d } = navigableDeps({
       // No translator yet: the reader has not accepted the language-pack download.
       checkAvailability: async () => "downloadable",
-      createTranslator: async () => ({ translate, destroy: vi.fn() }),
+      createTranslator: async () => fakeEngine(translate),
     });
     await startSplit(document, DEFAULT_PREFERENCES, hooks, d);
     await new Promise((resolve) => setTimeout(resolve));
