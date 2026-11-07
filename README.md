@@ -3,9 +3,10 @@
 Read a page and its translation side by side, in the same tab.
 
 Two panes of the same page, one as published and one translated in place, kept on the same
-sentence as you scroll. Translation runs on your own machine through Chrome's built-in
-Translator API: no API key, no account, nothing sent anywhere, and it works offline once the
-language pack is downloaded.
+sentence as you scroll. By default translation runs on your own machine through Chrome's
+built-in Translator API: no API key, no account, nothing sent anywhere, and it works offline
+once the language pack is downloaded. For English and Japanese you can instead use
+[Sarashina](#translating-with-sarashina) with your own API key.
 
 ![Two panes of one page, English on the left and Japanese on the right](store-assets/screenshots/parallax-1-hero.png)
 
@@ -46,6 +47,30 @@ for flipping the direction can be assigned at `chrome://extensions/shortcuts`.
 
 Esc closes the split. So does dragging the translated pane away.
 
+## Translating with Sarashina
+
+Sarashina is SB Intuitions' translation API, for English and Japanese in either direction.
+To use it, enter your API key on parallax's options page, allow access to
+`api.sarashina.ai` when Chrome asks, and choose **Sarashina API** as the translator in the
+popup. The page text you split is then sent to SB Intuitions; [PRIVACY.md](PRIVACY.md#translating-with-sarashina)
+says exactly what goes where.
+
+It differs from the on-device translator in a few ways:
+
+- **It translates a paragraph at a time**, so the result reads as whole sentences rather
+  than fragments. The service rewrites a paragraph as one piece and cannot say which words
+  belong to a link inside it, so the paragraph's translation goes into one of its text nodes
+  and links and emphasis inside it are left empty in the translated pane. The original pane
+  keeps them.
+- **It allows 30 requests a minute.** parallax sends about 1,500 characters per request and
+  waits when the service says to, with the seconds left in the toolbar; what is translated
+  stays readable meanwhile.
+- **It accepts requests from Japan only.**
+- **Every failure is named**: a missing or rejected key, a refused request, a timeout, or an
+  answer whose paragraphs do not match what was sent. A batch answered a paragraph short is
+  sent once more, because in testing the same request sent again came back whole; a second
+  short answer stops the page.
+
 ## Known limitations
 
 - **The panes are two more loads of the page.** In-page state — form input, an SPA's route,
@@ -55,9 +80,10 @@ Esc closes the split. So does dragging the translated pane away.
   arrives untranslated; press **Translate this page again** in the popup. Fixing the automatic
   path is the next thing on the list.
 - **A link to another site ends the split**, returning you to the page you started from.
-- **Sentences broken across `<a>` or `<strong>` translate as fragments**, because each text
-  node is translated separately — which is what keeps the two panes structurally identical
-  and therefore alignable.
+- **Sentences broken across `<a>` or `<strong>` translate as fragments** with the on-device
+  translator, because each text node is translated separately — which is what keeps the two
+  panes structurally identical and therefore alignable. Sarashina translates whole
+  paragraphs instead, at the cost of the links inside them.
 - **Some sites will not load in a frame** for reasons no permission can change, and a few
   render differently on each load, which leaves fewer blocks to align on.
 
