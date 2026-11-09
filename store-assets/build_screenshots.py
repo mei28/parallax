@@ -147,10 +147,12 @@ STYLE = f"""
   .point {{ flex: 1; }}
   .point b {{ display: block; font-size: 17px; font-weight: 640; margin-bottom: 6px; }}
   .point span {{ font-size: 14px; line-height: 1.55; opacity: .7; }}
-  .point.on b::before {{
+  .point.on b::before, .point.optional b::before {{
     content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%;
-    background: {CYAN}; margin-right: 9px; vertical-align: middle;
+    background: {CYAN}; margin-right: 9px; vertical-align: middle; box-sizing: border-box;
   }}
+  /* Hollow: something the reader can choose, not something that holds regardless. */
+  .point.optional b::before {{ background: transparent; border: 2px solid {CYAN}; }}
 """
 
 
@@ -212,8 +214,8 @@ def page(title: str, sub: str, body: str, points: str = "") -> str:
     """
 
 
-def point(label: str, text: str, on: bool = False) -> str:
-    marker = " on" if on else ""
+def point(label: str, text: str, on: bool = False, optional: bool = False) -> str:
+    marker = " on" if on else " optional" if optional else ""
     return f"<div class='point{marker}'><b>{label}</b><span>{text}</span></div>"
 
 
@@ -242,13 +244,14 @@ SHOTS: dict[str, str] = {
     ),
     "5-private": page(
         "Runs on <em>your</em> machine",
-        "Translation uses Chrome's built-in on-device model. No API key, no account, and "
-        "nothing you read is sent anywhere — including to us.",
+        "By default, translation uses Chrome's built-in on-device model. No API key, no "
+        "account, and nothing you read is sent anywhere — including to us.",
         f'<div class="stage" style="padding-bottom:0">{window()}</div>',
         f"""<div class="points">
-          {point("No key, no account", "Nothing to sign up for and nothing to pay for.", True)}
+          {point("No key needed", "Nothing to sign up for, nothing to pay for.", True)}
           {point("Works offline", "Once Chrome has the language pack, no network is used.", True)}
           {point("No data collected", "No analytics, no telemetry, no reporting.", True)}
+          {point("Or bring an API key", "Sarashina, for English and Japanese, with a key of your own.", optional=True)}
         </div>""",
     ),
 }

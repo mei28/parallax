@@ -23,7 +23,7 @@ listing about translation, invented copy is the one thing a reader is entitled t
 | `2-aligned` | The panes are matched by content. A dashed rule is drawn from the same heading in each pane, so a reader can check the claim instead of taking it |
 | `3-adjustable` | The split goes where you drag it, and the grip is visibly a grip |
 | `4-vertical` | The same thing stacked top and bottom |
-| `5-private` | On-device translation, and the three things that follow from it |
+| `5-private` | On-device translation by default and the three things that follow from it, with the API translator as the option beside them |
 | `promo-440x280` | The name and the mark. At that size nothing inside a window would be legible |
 
 ## Editing them

@@ -41,9 +41,10 @@ Chrome does once and then keeps.
 
 ## Using it
 
-Click the toolbar icon, choose the languages and the split direction, and press **Split this
-page**. `Alt+Shift+P` opens the popup and `Alt+Shift+S` starts or stops a split; a shortcut
-for flipping the direction can be assigned at `chrome://extensions/shortcuts`.
+Click the toolbar icon, choose the translator, the languages and the split direction, and
+press **Split this page**. `Alt+Shift+P` opens the popup and `Alt+Shift+S` starts or stops a
+split; a shortcut for flipping the direction can be assigned at
+`chrome://extensions/shortcuts`.
 
 Esc closes the split. So does dragging the translated pane away.
 
@@ -111,7 +112,9 @@ Load `dist/` at `chrome://extensions` with developer mode on.
 | `src/shared/` | Pure functions only — no DOM, no `chrome.*`. Split geometry, scroll projection, alignment, failure descriptions |
 | `src/content/` | The content script. The only place that touches a page, and where the Translator API is called — it is not available in a service worker |
 | `src/chrome/` | Thin adapters over `chrome.*`, which is what lets `src/shared/` stay pure |
-| `src/background/` | The service worker: keyboard commands and the framing override |
+| `src/background/` | The service worker: keyboard commands, the framing override, and the requests to Sarashina. The only place the API key is read |
+| `src/popup/` | The popup: translator, languages and split direction |
+| `src/options/` | The options page: the Sarashina API key, and the permission to reach the service |
 | `test/` | Mirrors `src/`. jsdom is opted into per file |
 | `video/` | The store promo video, drawn with Remotion. Its scroll sync imports the anchor math from `src/shared/` rather than copying it |
 

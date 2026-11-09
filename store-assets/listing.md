@@ -31,8 +31,11 @@ Then, for each release:
    than the usual day or so, and may come back with questions; the justifications below are
    written to be answerable by quoting them.
 
-After approval, an update is the same loop from step 1. Review is quicker for updates that
-do not change the permissions.
+After approval, an update runs the same loop with three differences. Merge to `main` first,
+because the privacy policy URL points there and reviewers read it. Step 3 uploads to the
+existing item instead of creating one: open it in the dashboard, then **Package** → **Upload
+new package**. Steps 4 and 5 are needed only for the fields that changed; the dashboard keeps
+the rest. Review is quicker for updates that do not change the permissions.
 
 ---
 
@@ -107,6 +110,8 @@ KNOWN LIMITATIONS
   "Translate this page again" in the popup.
 • A link to another site ends the split and returns you to where you started.
 • Some sites will not run inside a frame for reasons no permission can change.
+• With Sarashina, links and emphasis inside a paragraph are not kept in the translated
+  pane, and the service accepts requests from Japan only.
 
 Source code: https://github.com/mei28/parallax
 ```
@@ -224,6 +229,6 @@ All drawn by `just screenshots`, into `store-assets/screenshots/`.
 | Privacy practices | Single purpose | see below |
 | Privacy practices | Permission justification | one box per permission, below |
 | Privacy practices | Remote code | No |
-| Privacy practices | Data usage | nothing collected; all three certifications apply |
+| Privacy practices | Data usage | Website content and Authentication information, as under Data usage; all three certifications apply |
 | Privacy practices | Privacy policy URL | `https://github.com/mei28/parallax/blob/main/PRIVACY.md` |
 | Distribution | Visibility / Regions | Public / all |

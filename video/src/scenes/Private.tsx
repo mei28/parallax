@@ -39,7 +39,8 @@ const CHART: ReactNode = (
   </>
 );
 
-// The listing's fifth image says the same three things, in the same words.
+// The listing's fifth image says these three things too, and adds the API translator as an
+// option beside them, which this scene does not show.
 const POINTS = [
   {
     label: "No key, no account",
