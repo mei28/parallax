@@ -74,6 +74,7 @@ export const LANGUAGES: readonly { readonly code: string; readonly label: string
 ];
 
 export const DEFAULT_PREFERENCES: Preferences = {
+  provider: "on-device",
   sourceLanguage: "en",
   targetLanguage: "ja",
   orientation: "horizontal",

@@ -1,6 +1,7 @@
 node_modules/
 dist/
 parallax.zip
+video/out/
 *.tgz
 *.zip
 

@@ -49,3 +49,18 @@ screenshots:
 package: build
     rm -f parallax.zip
     cd dist && zip -r ../parallax.zip .
+
+# Open Remotion Studio on the promo video (video/)
+video-studio:
+    cd video && pnpm exec remotion studio
+
+# Render one composition of the promo video to video/out/<id>.mp4
+video-render id:
+    cd video && pnpm exec remotion render {{id}} out/{{id}}.mp4
+
+# Render a single frame of a composition to video/out/<id>-<frame>.png
+video-still id frame="0":
+    cd video && pnpm exec remotion still {{id}} out/{{id}}-{{frame}}.png --frame={{frame}}
+
+video-typecheck:
+    cd video && pnpm exec tsc --noEmit

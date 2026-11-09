@@ -1,7 +1,8 @@
 # parallax — Chrome Extension
 
 原文と訳文を同一タブ内で並べて読むための Chrome 拡張。同じ URL を指す同一オリジンの iframe を
-2 枚並べ、片方の DOM を Chrome 組み込み Translator API でその場翻訳する。
+2 枚並べ、片方の DOM を Chrome 組み込み Translator API（既定）か、ユーザ自身のキーで
+Sarashina API（英日のみ）を使ってその場翻訳する。
 
 ## Conventions
 
@@ -29,8 +30,12 @@
 
 - `src/content/` — content script。DOM 操作はここだけ。Translator API もここで呼ぶ
   （service worker は worker コンテキストなので Translator を持たない）
-- `src/background/` — service worker。storage と `scripting.executeScript` の橋渡しのみ
-- `src/popup/` — popup UI
+- `src/background/` — service worker。storage と `scripting.executeScript` の橋渡しに加え、
+  Sarashina への fetch を行う。API キーを読むのはここだけ（content script には渡さない）。
+  host permission 付きの fetch で CORS を越える（Sarashina は ACAO を返さない）
+- `src/popup/` — popup UI（翻訳エンジンの選択を含む）
+- `src/options/` — オプションページ。Sarashina の API キー保存と `api.sarashina.ai` の
+  host permission 要求（`permissions.request` は拡張ページからしか呼べない）
 - `src/shared/` — pure function のみ（型、定数、分割の幾何計算、スクロール射影、失敗の記述）
 - `src/chrome/` — `chrome.*` API の薄いアダプタ。`src/shared/` が純粋でいられるのはここがあるため
 - `static/` — manifest.json, HTML, CSS, icons（ビルド時に dist/ へコピー）
@@ -52,3 +57,7 @@
 翻訳は `Text.data` の代入のみを行い、要素の挿入・削除・移動をしない。
 2 つの iframe の DOM 構造が一致していることがスクロール同期の対応付けの前提であり、
 翻訳がこれを壊すと同期が壊れる。
+
+Sarashina はブロック（段落）単位で訳す。訳文はブロック内の 1 ノードに入れ、残りのノードは
+前後の空白だけを残して中身を空にする。空にするのも `Text.data` の代入なので、この不変条件は
+保たれる。ノード単位で送ると断片が文にまとめられて対応が取れないことを、実 API で確かめてある。

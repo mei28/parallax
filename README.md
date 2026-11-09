@@ -3,9 +3,10 @@
 Read a page and its translation side by side, in the same tab.
 
 Two panes of the same page, one as published and one translated in place, kept on the same
-sentence as you scroll. Translation runs on your own machine through Chrome's built-in
-Translator API: no API key, no account, nothing sent anywhere, and it works offline once the
-language pack is downloaded.
+sentence as you scroll. By default translation runs on your own machine through Chrome's
+built-in Translator API: no API key, no account, nothing sent anywhere, and it works offline
+once the language pack is downloaded. For English and Japanese you can instead use
+[Sarashina](#translating-with-sarashina) with your own API key.
 
 ![Two panes of one page, English on the left and Japanese on the right](store-assets/screenshots/parallax-1-hero.png)
 
@@ -40,11 +41,36 @@ Chrome does once and then keeps.
 
 ## Using it
 
-Click the toolbar icon, choose the languages and the split direction, and press **Split this
-page**. `Alt+Shift+P` opens the popup and `Alt+Shift+S` starts or stops a split; a shortcut
-for flipping the direction can be assigned at `chrome://extensions/shortcuts`.
+Click the toolbar icon, choose the translator, the languages and the split direction, and
+press **Split this page**. `Alt+Shift+P` opens the popup and `Alt+Shift+S` starts or stops a
+split; a shortcut for flipping the direction can be assigned at
+`chrome://extensions/shortcuts`.
 
 Esc closes the split. So does dragging the translated pane away.
+
+## Translating with Sarashina
+
+Sarashina is SB Intuitions' translation API, for English and Japanese in either direction.
+To use it, enter your API key on parallax's options page, allow access to
+`api.sarashina.ai` when Chrome asks, and choose **Sarashina API** as the translator in the
+popup. The page text you split is then sent to SB Intuitions; [PRIVACY.md](PRIVACY.md#translating-with-sarashina)
+says exactly what goes where.
+
+It differs from the on-device translator in a few ways:
+
+- **It translates a paragraph at a time**, so the result reads as whole sentences rather
+  than fragments. The service rewrites a paragraph as one piece and cannot say which words
+  belong to a link inside it, so the paragraph's translation goes into one of its text nodes
+  and links and emphasis inside it are left empty in the translated pane. The original pane
+  keeps them.
+- **It allows 30 requests a minute.** parallax sends about 1,500 characters per request and
+  waits when the service says to, with the seconds left in the toolbar; what is translated
+  stays readable meanwhile.
+- **It accepts requests from Japan only.**
+- **Every failure is named**: a missing or rejected key, a refused request, a timeout, or an
+  answer whose paragraphs do not match what was sent. A batch answered a paragraph short is
+  sent once more, because in testing the same request sent again came back whole; a second
+  short answer stops the page.
 
 ## Known limitations
 
@@ -55,9 +81,10 @@ Esc closes the split. So does dragging the translated pane away.
   arrives untranslated; press **Translate this page again** in the popup. Fixing the automatic
   path is the next thing on the list.
 - **A link to another site ends the split**, returning you to the page you started from.
-- **Sentences broken across `<a>` or `<strong>` translate as fragments**, because each text
-  node is translated separately — which is what keeps the two panes structurally identical
-  and therefore alignable.
+- **Sentences broken across `<a>` or `<strong>` translate as fragments** with the on-device
+  translator, because each text node is translated separately — which is what keeps the two
+  panes structurally identical and therefore alignable. Sarashina translates whole
+  paragraphs instead, at the cost of the links inside them.
 - **Some sites will not load in a frame** for reasons no permission can change, and a few
   render differently on each load, which leaves fewer blocks to align on.
 
@@ -70,6 +97,10 @@ just watch          # rebuild on change
 just check          # biome + tsc --noEmit + vitest   (the gate before any commit)
 just serve          # fixture pages on localhost:3000
 just package        # parallax.zip for the Chrome Web Store
+
+(cd video && pnpm install)   # once: the promo video has its own dependencies
+just video-studio            # edit it in Remotion Studio
+just video-render Promo      # video/out/Promo.mp4
 ```
 
 Load `dist/` at `chrome://extensions` with developer mode on.
@@ -81,8 +112,11 @@ Load `dist/` at `chrome://extensions` with developer mode on.
 | `src/shared/` | Pure functions only — no DOM, no `chrome.*`. Split geometry, scroll projection, alignment, failure descriptions |
 | `src/content/` | The content script. The only place that touches a page, and where the Translator API is called — it is not available in a service worker |
 | `src/chrome/` | Thin adapters over `chrome.*`, which is what lets `src/shared/` stay pure |
-| `src/background/` | The service worker: keyboard commands and the framing override |
+| `src/background/` | The service worker: keyboard commands, the framing override, and the requests to Sarashina. The only place the API key is read |
+| `src/popup/` | The popup: translator, languages and split direction |
+| `src/options/` | The options page: the Sarashina API key, and the permission to reach the service |
 | `test/` | Mirrors `src/`. jsdom is opted into per file |
+| `video/` | The store promo video, drawn with Remotion. Its scroll sync imports the anchor math from `src/shared/` rather than copying it |
 
 Two invariants hold the design up. Translation only ever assigns `Text.data` — never inserts,
 removes or reparents an element — which is what keeps the two panes alignable as it runs. And

@@ -23,15 +23,19 @@ Then, for each release:
    screenshots and the promo tile from `store-assets/screenshots/`; and the store icon,
    which is uploaded here separately from the one inside the package.
 5. **Privacy**: the single purpose and the four permission justifications from below, the
-   privacy policy URL, and the data-usage declarations — none of the categories apply, and
-   all three certifications can be affirmed.
+   privacy policy URL, and the data-usage declarations — Website content and Authentication
+   information, as described under Data usage below, and all three certifications can be
+   affirmed.
 6. **Distribution**: public, all regions, no payment.
 7. **Submit for review.** A first submission that asks for broad host access takes longer
    than the usual day or so, and may come back with questions; the justifications below are
    written to be answerable by quoting them.
 
-After approval, an update is the same loop from step 1. Review is quicker for updates that
-do not change the permissions.
+After approval, an update runs the same loop with three differences. Merge to `main` first,
+because the privacy policy URL points there and reviewers read it. Step 3 uploads to the
+existing item instead of creating one: open it in the dashboard, then **Package** → **Upload
+new package**. Steps 4 and 5 are needed only for the fields that changed; the dashboard keeps
+the rest. Review is quicker for updates that do not change the permissions.
 
 ---
 
@@ -43,10 +47,10 @@ do not change the permissions.
 parallax — side-by-side translation
 ```
 
-**Short description** (132 max — currently 118)
+**Short description** (132 max — currently 119)
 
 ```
-Read a page and its translation side by side. Runs on your own machine: no API key, no account, nothing sent anywhere.
+Read a page and its translation side by side. On your own machine by default, or with Sarashina using your own API key.
 ```
 
 **Category**: Productivity
@@ -58,10 +62,15 @@ Read a page and its translation side by side. Runs on your own machine: no API k
 parallax shows a web page and its translation side by side in the same tab, and keeps
 them on the same sentence as you scroll.
 
-Translation runs on your own machine, using Chrome's built-in Translator API. There is
-no API key to get, no account to make, and no service to trust: the text of what you
-read never leaves your computer. Once Chrome has downloaded a language pack, it works
-with no network at all.
+By default, translation runs on your own machine, using Chrome's built-in Translator
+API. There is no API key to get, no account to make, and no service to trust: the text of
+what you read never leaves your computer. Once Chrome has downloaded a language pack, it
+works with no network at all.
+
+For English and Japanese you can choose Sarashina, SB Intuitions' translation API,
+instead, with an API key of your own. It translates a paragraph at a time, so the result
+reads as whole sentences. With Sarashina chosen, the text of the pages you split is sent
+to SB Intuitions to be translated.
 
 WHAT IT DOES
 
@@ -85,8 +94,10 @@ not exist on Android or iOS. The first use of a language pair downloads a langua
 
 PRIVACY
 
-No analytics, no telemetry, no accounts, no data collection of any kind. The only things
-stored are your chosen languages and split layout, kept on your machine.
+No analytics, no telemetry, no accounts, and nothing ever sent to the developer. Page
+text leaves your machine only if you choose Sarashina, and then only to SB Intuitions.
+What is stored — your chosen translator, languages and split layout, and your Sarashina
+key if you entered one — stays on your machine.
 
 Full policy: https://github.com/mei28/parallax/blob/main/PRIVACY.md
 
@@ -99,6 +110,8 @@ KNOWN LIMITATIONS
   "Translate this page again" in the popup.
 • A link to another site ends the split and returns you to where you started.
 • Some sites will not run inside a frame for reasons no permission can change.
+• With Sarashina, links and emphasis inside a paragraph are not kept in the translated
+  pane, and the service accepts requests from Japan only.
 
 Source code: https://github.com/mei28/parallax
 ```
@@ -109,7 +122,8 @@ Source code: https://github.com/mei28/parallax
 
 ```
 parallax shows a web page and its translation side by side in one tab, using Chrome's
-built-in on-device Translator API. Everything it does serves that: creating the two
+built-in on-device Translator API or, if the reader chooses it and supplies their own API
+key, the Sarashina translation API. Everything it does serves that: creating the two
 panes, translating one of them, aligning their scrolling, and letting the reader adjust
 the split.
 ```
@@ -136,10 +150,11 @@ ask for a split.
 `storage`
 
 ```
-Two things, kept locally and never transmitted: the reader's chosen languages and split
-layout, so the next split opens as they left it; and the origin of the last site that
-refused to be embedded, so the popup can offer to allow that one site while it is the
-one on screen.
+Kept locally: the reader's chosen translator, languages and split layout, so the next
+split opens as they left it; the origin of the last site that refused to be embedded, so
+the popup can offer to allow that one site while it is the one on screen; and, if the
+reader enters one, their Sarashina API key, which is sent only to api.sarashina.ai with
+the requests they asked for.
 ```
 
 `declarativeNetRequestWithHostAccess`
@@ -174,11 +189,19 @@ specific site only after that site has refused to be embedded, and only if they 
 the button offering it. The pattern is broad because the site that refuses could be any
 site the reader visits; the grant never is. Granted sites can be withdrawn from
 chrome://extensions.
+
+The same mechanism asks for https://api.sarashina.ai/* when the reader saves a Sarashina
+API key on the options page, so the service worker can call the translation API they
+chose. Removing the key withdraws it.
 ```
 
 **Remote code**: No. Everything executed ships in the package.
 
-**Data usage**: nothing is collected. No category applies.
+**Data usage**: nothing is collected by the developer. When the reader chooses Sarashina,
+two categories are transmitted to SB Intuitions, a third party, for the single purpose
+above: **Website content** (the text of the page being translated) and **Authentication
+information** (the reader's own API key, in the request header). Neither is sold, used
+for anything else, or used to determine creditworthiness.
 
 ## Assets
 
@@ -189,6 +212,7 @@ All drawn by `just screenshots`, into `store-assets/screenshots/`.
 | Screenshots | 1280×800 | `store-assets/screenshots/parallax-1-hero` … `-5-private` |
 | Small promo tile | 440×280 | `store-assets/screenshots/parallax-promo-440x280` |
 | Store icon | 128×128 | `static/icons/icon-128.png` — uploaded to the listing, separately from the copy inside the package |
+| Promo video | 1920×1080, 36 s | `video/out/Promo.mp4`, from `just video-render Promo`. The listing takes a YouTube URL, not a file, so it goes up to YouTube first |
 
 ## Where each field goes
 
@@ -199,11 +223,12 @@ All drawn by `just screenshots`, into `store-assets/screenshots/`.
 | Store listing | Description | Detailed description |
 | Store listing | Category / Language | Productivity / English |
 | Store listing | Graphic assets | the table above |
+| Store listing | Global promo video | the YouTube URL of the promo video |
 | Store listing | Homepage URL | `https://github.com/mei28/parallax` |
 | Store listing | Support URL | `https://github.com/mei28/parallax/issues` |
 | Privacy practices | Single purpose | see below |
 | Privacy practices | Permission justification | one box per permission, below |
 | Privacy practices | Remote code | No |
-| Privacy practices | Data usage | nothing collected; all three certifications apply |
+| Privacy practices | Data usage | Website content and Authentication information, as under Data usage; all three certifications apply |
 | Privacy practices | Privacy policy URL | `https://github.com/mei28/parallax/blob/main/PRIVACY.md` |
 | Distribution | Visibility / Regions | Public / all |

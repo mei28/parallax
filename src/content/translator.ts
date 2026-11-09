@@ -4,11 +4,8 @@
 // exposed to worker contexts, only to windows, extension pages and offscreen documents.
 import { ParallaxError } from "../shared/errors.ts";
 import type { LanguagePair } from "../shared/types.ts";
-
-export interface TranslatorSession {
-  translate(text: string): Promise<string>;
-  destroy(): void;
-}
+import type { TranslationEngine } from "./translate-queue.ts";
+import { nodeUnits } from "./units.ts";
 
 export interface CreateCallbacks {
   /** Fraction 0..1 while a language pack downloads. Never called if it is already present. */
@@ -42,13 +39,31 @@ export async function checkAvailability(pair: LanguagePair): Promise<"available"
 /**
  * Open a translation session.
  *
+ * The on-device model takes one text per call, so a batch is translated text by text.
+ *
  * @throws ParallaxError ACTIVATION_REQUIRED when Chrome wants a user gesture before it will
  * download a pack, DOWNLOAD_FAILED for anything else.
  */
 export async function createTranslator(
   pair: LanguagePair,
   callbacks: CreateCallbacks,
-): Promise<TranslatorSession> {
+): Promise<TranslationEngine> {
+  const session = await openSession(pair, callbacks);
+  return {
+    unitsOf: nodeUnits,
+    async translateBatch(texts) {
+      const translations: string[] = [];
+      for (const text of texts) {
+        translations.push(await session.translate(text));
+      }
+      return { kind: "translated", texts: translations };
+    },
+    accepts: (texts) => texts.length <= 1,
+    destroy: () => session.destroy(),
+  };
+}
+
+async function openSession(pair: LanguagePair, callbacks: CreateCallbacks): Promise<Translator> {
   try {
     return await Translator.create({
       sourceLanguage: pair.source,

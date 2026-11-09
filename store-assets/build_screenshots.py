@@ -13,6 +13,7 @@ Writes store-assets/screenshots/. Run `just icons` first if the icon has changed
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -36,44 +37,13 @@ CYAN = "#22d3ee"  # the translation, and its right half
 
 ICON = b64encode((ROOT / "static" / "icons" / "icon-128.png").read_bytes()).decode()
 
-# Real sentences from the fixture and its translation. Invented copy in a picture about
-# translation would be the one thing a reader is entitled to disbelieve.
-EN = [
-    ("h", "Notes on reading two texts at once"),
-    ("p", "Reading a translation beside its original is an old habit. Scribes ruled two "
-          "columns on a single sheet so the eye could cross between them without losing "
-          "its place."),
-    ("h2", "What the panes must agree on"),
-    ("p", "A paragraph that runs four lines in English may run three in Japanese, or six. "
-          "Alignment has to be anchored to the content itself."),
-    ("p", "The order of the blocks, so an anchor in one pane names a block in the other. "
-          "The identity of each block, which survives translation only if nothing is "
-          "reparented. Nothing else: heights, line counts and wrapping are all free to "
-          "differ, and they do."),
-    ("h2", "Enough length to scroll"),
-    ("p", "When a reader moves down a column, the thing they are tracking is not a pixel "
-          "offset but a sentence. Restoring that sentence to the same height in the facing "
-          "column is the whole of the problem."),
-    ("p", "It is also why the anchor is taken a fifth of the way down the viewport rather "
-          "than at its very top: a block straddling the top edge is one the reader has "
-          "already finished with."),
-]
-JA = [
-    ("h", "二つのテキストを同時に読むこと"),
-    ("p", "原文の隣に翻訳を置いて読むのは古くからの習慣である。写字生は一枚の紙に二つの段を"
-          "引き、目が行を見失わずに行き来できるようにした。"),
-    ("h2", "二つのペインが一致すべきこと"),
-    ("p", "英語で四行の段落が、日本語では三行にも六行にもなる。位置合わせは内容そのものを"
-          "基準にするほかない。"),
-    ("p", "ブロックの順序。一方のペインの基準点が、もう一方のどのブロックを指すかが決まる"
-          "ため。各ブロックの同一性。これは要素の親子関係が変わらない限り翻訳後も保たれる。"
-          "それ以外は一致しなくてよい。高さも行数も折り返しも自由に違ってよいし、実際に違う。"),
-    ("h2", "スクロールできるだけの長さ"),
-    ("p", "読者が段を下っていくとき、追っているのはピクセル座標ではなく一つの文である。"
-          "その文を向かいの段の同じ高さに置き直すこと、それがこの問題のすべてである。"),
-    ("p", "基準線をビューポートの最上部ではなく五分の一の位置に取るのもそのためだ。"
-          "上端にかかっているブロックは、読者がすでに読み終えたものだから。"),
-]
+# Real sentences from the fixture, and what Chrome's Translator API actually makes of them.
+# Invented copy in a picture about translation would be the one thing a reader is entitled
+# to disbelieve, and so would a translation tidier than the one they will get. Kept in a
+# file of their own because the promo video in video/ shows the same article.
+ARTICLE = json.loads((ROOT / "store-assets" / "article.json").read_text(encoding="utf-8"))
+EN = [(block["kind"], block["en"]) for block in ARTICLE]
+JA = [(block["kind"], block["ja"]) for block in ARTICLE]
 
 STYLE = f"""
   *, *::before, *::after {{ box-sizing: border-box; }}
@@ -139,7 +109,9 @@ STYLE = f"""
   .pane h3.t {{ font-size: 14.5px; margin: 18px 0 8px; }}
   .pane p {{ font-size: 12.5px; line-height: 1.75; margin: 0 0 10px; color: #3c3c46; }}
 
-  .handle {{ background: #e2e2e6; position: relative; }}
+  /* Above the panes: the grip is wider than the handle, and the pane after it would
+     otherwise paint over the half that overhangs. */
+  .handle {{ background: #e2e2e6; position: relative; z-index: 1; }}
   .grip {{
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: 12px; height: 24px; border-radius: 3px; background: #fff;
@@ -175,10 +147,12 @@ STYLE = f"""
   .point {{ flex: 1; }}
   .point b {{ display: block; font-size: 17px; font-weight: 640; margin-bottom: 6px; }}
   .point span {{ font-size: 14px; line-height: 1.55; opacity: .7; }}
-  .point.on b::before {{
+  .point.on b::before, .point.optional b::before {{
     content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%;
-    background: {CYAN}; margin-right: 9px; vertical-align: middle;
+    background: {CYAN}; margin-right: 9px; vertical-align: middle; box-sizing: border-box;
   }}
+  /* Hollow: something the reader can choose, not something that holds regardless. */
+  .point.optional b::before {{ background: transparent; border: 2px solid {CYAN}; }}
 """
 
 
@@ -186,9 +160,9 @@ def prose(lines: list[tuple[str, str]], anchor: str | None = None) -> str:
     """Render the fixture's blocks. `anchor` marks the heading the alignment rule is drawn on."""
     out = []
     for kind, text in lines:
-        if kind == "h":
+        if kind == "title":
             out.append(f"<h2 class='t'>{text}</h2>")
-        elif kind == "h2":
+        elif kind == "heading":
             marked = anchor is not None and not any("anchored" in piece for piece in out)
             label = f" data-label=\"{anchor}\"" if marked and anchor else ""
             css = "t anchored" if marked else "t"
@@ -240,8 +214,8 @@ def page(title: str, sub: str, body: str, points: str = "") -> str:
     """
 
 
-def point(label: str, text: str, on: bool = False) -> str:
-    marker = " on" if on else ""
+def point(label: str, text: str, on: bool = False, optional: bool = False) -> str:
+    marker = " on" if on else " optional" if optional else ""
     return f"<div class='point{marker}'><b>{label}</b><span>{text}</span></div>"
 
 
@@ -255,7 +229,7 @@ SHOTS: dict[str, str] = {
         "Aligned by <em>content</em>, not by percentage",
         "A translated paragraph rarely keeps its original height, so scrolling two columns "
         "in proportion drifts apart. parallax matches the panes block by block.",
-        f'<div class="stage">{window(rule=True, nudge="-9px")}</div>',
+        f'<div class="stage">{window(rule=True, nudge="-5px")}</div>',
     ),
     "3-adjustable": page(
         "Drag the split <em>anywhere</em>",
@@ -270,13 +244,14 @@ SHOTS: dict[str, str] = {
     ),
     "5-private": page(
         "Runs on <em>your</em> machine",
-        "Translation uses Chrome's built-in on-device model. No API key, no account, and "
-        "nothing you read is sent anywhere — including to us.",
+        "By default, translation uses Chrome's built-in on-device model. No API key, no "
+        "account, and nothing you read is sent anywhere — including to us.",
         f'<div class="stage" style="padding-bottom:0">{window()}</div>',
         f"""<div class="points">
-          {point("No key, no account", "Nothing to sign up for and nothing to pay for.", True)}
+          {point("No key needed", "Nothing to sign up for, nothing to pay for.", True)}
           {point("Works offline", "Once Chrome has the language pack, no network is used.", True)}
           {point("No data collected", "No analytics, no telemetry, no reporting.", True)}
+          {point("Or bring an API key", "Sarashina, for English and Japanese, with a key of your own.", optional=True)}
         </div>""",
     ),
 }

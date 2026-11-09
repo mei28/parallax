@@ -2,6 +2,15 @@
   "prompt_translate_page": {
     "message": "This page has not been translated yet."
   },
+  "status_rate_limited": {
+    "message": "Request limit reached. Continuing in $SECONDS$ s…",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "48"
+      }
+    }
+  },
   "action_retranslate": {
     "message": "Translate again"
   },
@@ -134,5 +143,93 @@
   },
   "error_no_anchors": {
     "message": "Scroll sync is unavailable: this page has no block-level anchors to align on."
+  },
+  "error_api_key_missing": {
+    "message": "Sarashina is the selected translator, but no API key is set. Add one in parallax's options."
+  },
+  "error_api_permission_missing": {
+    "message": "parallax is not allowed to reach api.sarashina.ai. Save the key again in parallax's options and allow access when Chrome asks."
+  },
+  "error_api_auth_failed": {
+    "message": "Sarashina rejected the API key. Check it in parallax's options."
+  },
+  "error_api_forbidden": {
+    "message": "Sarashina refused the request ($MESSAGE$). It accepts requests from Japan only, so turn off any VPN or proxy.",
+    "placeholders": {
+      "message": {
+        "content": "$1",
+        "example": "Forbidden"
+      }
+    }
+  },
+  "error_api_request_failed": {
+    "message": "Sarashina answered HTTP $STATUS$: $MESSAGE$",
+    "placeholders": {
+      "status": {
+        "content": "$1",
+        "example": "500"
+      },
+      "message": {
+        "content": "$2",
+        "example": "Internal Server Error"
+      }
+    }
+  },
+  "error_api_timeout": {
+    "message": "Sarashina did not answer within $SECONDS$ seconds.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "25"
+      }
+    }
+  },
+  "error_api_unreachable": {
+    "message": "Could not reach Sarashina: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "Failed to fetch"
+      }
+    }
+  },
+  "error_batch_mismatch": {
+    "message": "Sarashina was sent $EXPECTED$ paragraphs and answered $ACTUAL$, so they cannot be matched up. The rest of the page is left untranslated.",
+    "placeholders": {
+      "expected": {
+        "content": "$1",
+        "example": "12"
+      },
+      "actual": {
+        "content": "$2",
+        "example": "11"
+      }
+    }
+  },
+  "error_text_too_long": {
+    "message": "One piece of text is $LENGTH$ characters, over Sarashina's limit of $LIMIT$. Translation stopped there.",
+    "placeholders": {
+      "length": {
+        "content": "$1",
+        "example": "5210"
+      },
+      "limit": {
+        "content": "$2",
+        "example": "5000"
+      }
+    }
+  },
+  "error_provider_pair_unsupported": {
+    "message": "Sarashina translates only between English and Japanese, not from $SOURCE$ into $TARGET$.",
+    "placeholders": {
+      "source": {
+        "content": "$1",
+        "example": "fr"
+      },
+      "target": {
+        "content": "$2",
+        "example": "ja"
+      }
+    }
   }
 }

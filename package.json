@@ -1,6 +1,6 @@
 {
   "name": "parallax",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Read a page and its translation side by side, in the same tab",
   "type": "module",

@@ -4,11 +4,12 @@
 // Opening the popup is itself the user gesture that grants activeTab, so the extra hop would
 // buy nothing.
 import { sendToTab } from "../chrome/inject.ts";
+import { checkSarashinaReady } from "../chrome/sarashina.ts";
 import { loadBlockedOrigin, loadPreferences, savePreferences } from "../chrome/storage.ts";
 import { LANGUAGES } from "../shared/constants.ts";
 import { ParallaxError } from "../shared/errors.ts";
 import type { StateResponse } from "../shared/messages.ts";
-import type { Orientation } from "../shared/types.ts";
+import type { Orientation, TranslationProvider } from "../shared/types.ts";
 import { isSplittableUrl } from "../shared/url.ts";
 
 function required<T extends Element>(id: string): T {
@@ -19,6 +20,9 @@ function required<T extends Element>(id: string): T {
   return element as unknown as T;
 }
 
+const providerSelect = required<HTMLSelectElement>("provider");
+const setupNote = required<HTMLParagraphElement>("setup");
+const openOptionsButton = required<HTMLButtonElement>("open-options");
 const sourceSelect = required<HTMLSelectElement>("source");
 const targetSelect = required<HTMLSelectElement>("target");
 const horizontalRadio = required<HTMLInputElement>("horizontal");
@@ -43,6 +47,19 @@ function paintOrientation(orientation: Orientation): void {
   verticalRadio.checked = orientation === "vertical";
 }
 
+function selectedProvider(): TranslationProvider {
+  const value = providerSelect.value;
+  if (value === "on-device" || value === "sarashina") {
+    return value;
+  }
+  throw new Error(`popup.html offers a translator parallax does not know: ${value}`);
+}
+
+/** Point to the options page while Sarashina is chosen but cannot be used yet. */
+async function paintSetup(): Promise<void> {
+  setupNote.hidden = selectedProvider() !== "sarashina" || (await checkSarashinaReady()) === null;
+}
+
 async function activeTab(): Promise<chrome.tabs.Tab | undefined> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return tab;
@@ -50,6 +67,15 @@ async function activeTab(): Promise<chrome.tabs.Tab | undefined> {
 
 async function main(): Promise<void> {
   const preferences = await loadPreferences();
+  providerSelect.value = preferences.provider;
+  providerSelect.addEventListener("change", () => {
+    void savePreferences({ provider: selectedProvider() });
+    void paintSetup();
+  });
+  openOptionsButton.addEventListener("click", () => {
+    void chrome.runtime.openOptionsPage();
+  });
+  await paintSetup();
   fillLanguages(sourceSelect, preferences.sourceLanguage);
   fillLanguages(targetSelect, preferences.targetLanguage);
   paintOrientation(preferences.orientation);
@@ -95,6 +121,7 @@ async function main(): Promise<void> {
 
   const startSplit = async (): Promise<void> => {
     const current = await savePreferences({
+      provider: selectedProvider(),
       sourceLanguage: sourceSelect.value,
       targetLanguage: targetSelect.value,
     });

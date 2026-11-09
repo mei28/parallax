@@ -2,6 +2,15 @@
   "prompt_translate_page": {
     "message": "このページはまだ翻訳されていません。"
   },
+  "status_rate_limited": {
+    "message": "リクエスト数の上限に達しました。あと $SECONDS$ 秒で再開します。",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "48"
+      }
+    }
+  },
   "action_retranslate": {
     "message": "再翻訳"
   },
@@ -134,5 +143,93 @@
   },
   "error_no_anchors": {
     "message": "スクロール同期は使えません: このページには基準にできるブロック要素がありません。"
+  },
+  "error_api_key_missing": {
+    "message": "翻訳エンジンに Sarashina が選ばれていますが、API キーが設定されていません。parallax のオプションで設定してください。"
+  },
+  "error_api_permission_missing": {
+    "message": "parallax に api.sarashina.ai へのアクセスが許可されていません。オプションでキーを保存し直し、Chrome に尋ねられたら許可してください。"
+  },
+  "error_api_auth_failed": {
+    "message": "Sarashina が API キーを受け付けませんでした。オプションでキーを確認してください。"
+  },
+  "error_api_forbidden": {
+    "message": "Sarashina がリクエストを拒否しました（$MESSAGE$）。Sarashina は日本国内からのアクセスだけを受け付けます。VPN やプロキシを使っている場合は外してください。",
+    "placeholders": {
+      "message": {
+        "content": "$1",
+        "example": "Forbidden"
+      }
+    }
+  },
+  "error_api_request_failed": {
+    "message": "Sarashina が HTTP $STATUS$ を返しました: $MESSAGE$",
+    "placeholders": {
+      "status": {
+        "content": "$1",
+        "example": "500"
+      },
+      "message": {
+        "content": "$2",
+        "example": "Internal Server Error"
+      }
+    }
+  },
+  "error_api_timeout": {
+    "message": "Sarashina から $SECONDS$ 秒以内に応答がありませんでした。",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "25"
+      }
+    }
+  },
+  "error_api_unreachable": {
+    "message": "Sarashina に接続できませんでした: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "Failed to fetch"
+      }
+    }
+  },
+  "error_batch_mismatch": {
+    "message": "Sarashina に $EXPECTED$ 段落を送り、$ACTUAL$ 段落が返ってきました。対応が取れないため、残りは翻訳していません。",
+    "placeholders": {
+      "expected": {
+        "content": "$1",
+        "example": "12"
+      },
+      "actual": {
+        "content": "$2",
+        "example": "11"
+      }
+    }
+  },
+  "error_text_too_long": {
+    "message": "1 つのテキストが $LENGTH$ 文字あり、Sarashina の上限 $LIMIT$ 文字を超えています。翻訳はここで止まりました。",
+    "placeholders": {
+      "length": {
+        "content": "$1",
+        "example": "5210"
+      },
+      "limit": {
+        "content": "$2",
+        "example": "5000"
+      }
+    }
+  },
+  "error_provider_pair_unsupported": {
+    "message": "Sarashina が翻訳できるのは英語と日本語の間だけです（$SOURCE$ から $TARGET$ へは翻訳できません）。",
+    "placeholders": {
+      "source": {
+        "content": "$1",
+        "example": "fr"
+      },
+      "target": {
+        "content": "$2",
+        "example": "ja"
+      }
+    }
   }
 }

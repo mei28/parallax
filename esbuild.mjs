@@ -9,6 +9,7 @@ const buildOptions = {
     content: "src/content/index.ts",
     background: "src/background/index.ts",
     popup: "src/popup/index.ts",
+    options: "src/options/index.ts",
   },
   bundle: true,
   outdir: "dist",

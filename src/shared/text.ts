@@ -72,3 +72,14 @@ export function segmentWhitespace(text: string): Segmented {
 export function reassemble(segmented: Segmented, translatedCore: string): string {
   return segmented.leading + translatedCore + segmented.trailing;
 }
+
+/**
+ * Several text nodes read as one line, as a paragraph-at-a-time translator wants them.
+ *
+ * Joined with a space and then collapsed: the whitespace between two elements is often a
+ * node of its own that holds no letters and so was never collected, and without a space put
+ * back the words on either side would run together.
+ */
+export function joinNodeTexts(texts: readonly string[]): string {
+  return texts.join(" ").replace(/\s+/g, " ").trim();
+}

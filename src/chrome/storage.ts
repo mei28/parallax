@@ -45,3 +45,27 @@ export async function loadBlockedOrigin(): Promise<string | null> {
 export async function clearBlockedOrigin(): Promise<void> {
   await chrome.storage.local.remove(BLOCKED_KEY);
 }
+
+const API_KEY_KEY = "sarashinaApiKey";
+
+/**
+ * The reader's Sarashina API key.
+ *
+ * Kept apart from the preferences, which are handed to the content script with every split.
+ * The worker reads it when it makes a request, so the key never needs to enter the page.
+ * Stored unencrypted: an extension has nowhere better to keep a secret, and PRIVACY.md says
+ * so.
+ */
+export async function loadApiKey(): Promise<string | null> {
+  const stored = await chrome.storage.local.get(API_KEY_KEY);
+  const key = stored[API_KEY_KEY];
+  return typeof key === "string" ? key : null;
+}
+
+export async function saveApiKey(key: string): Promise<void> {
+  await chrome.storage.local.set({ [API_KEY_KEY]: key });
+}
+
+export async function removeApiKey(): Promise<void> {
+  await chrome.storage.local.remove(API_KEY_KEY);
+}
